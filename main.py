@@ -3,7 +3,12 @@ import os
 import uvicorn
 from fastapi import FastAPI
 
-app = FastAPI()
+app = FastAPI(title="Career tracker")
+
+
+@app.get("/")
+def read_root():
+    return {"message": "App started"}
 
 
 if __name__ == "__main__":
