@@ -1,0 +1,9 @@
+[project]
+name = "career-tracker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "environs>=14.6.0",
+]
