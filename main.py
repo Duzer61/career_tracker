@@ -1,10 +1,9 @@
 import os
 
 import uvicorn
+from fastapi import FastAPI
 
-
-def main():
-    print("Hello from career-tracker!")
+app = FastAPI()
 
 
 if __name__ == "__main__":
