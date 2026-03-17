@@ -19,7 +19,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    cards: Mapped[list["Card"]] = relationship(back_populates="user")
+    cards: Mapped[list["Card"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, login={self.login})>"
