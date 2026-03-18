@@ -20,7 +20,7 @@ def load_config() -> Config:
     return Config(
         db=DatabaseConfig(
             db_url=f"postgresql+asyncpg://{env("POSTGRES_USER")}:{env("POSTGRES_PASSWORD")}"
-            f"@localhost/{env("POSTGRES_DB")}"
+            f"@{env("POSTGRES_HOST")}/{env("POSTGRES_DB")}"
         )
     )
 
