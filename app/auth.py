@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 from utils import utc_now
 
 from app.config import config as cf
+from app.db.redis import redis_client
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -40,9 +41,10 @@ def create_jwt_token(data: dict, expires_delta: Optional[timedelta] = None) -> s
     return encoded_jwt
 
 
-def create_access_and_refresh_tokens(username: str) -> str:
+async def create_access_and_refresh_tokens(username: str) -> tuple[str, str]:
     """
-    Create access and refresh tokens.
+    Create access and refresh tokens and store the refresh token in Redis,
+    bound to the username, with TTL equal to REFRESH_TOKEN_EXP_DAYS.
     """
     access_payload = {"sub": username, "token_type": "access"}
     access_token_expires = timedelta(minutes=cf.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -51,5 +53,10 @@ def create_access_and_refresh_tokens(username: str) -> str:
     refresh_payload = {"sub": username, "token_type": "refresh"}
     refresh_token_expires = timedelta(days=cf.REFRESH_TOKEN_EXP_DAYS)
     refresh_token = create_jwt_token(refresh_payload, refresh_token_expires)
+
+    async with redis_client.get_client() as redis:
+        ttl = int(refresh_token_expires.total_seconds())  # TTL in seconds
+        key = f"refresh_token:{username}"
+        await redis.setex(key, ttl, refresh_token)
 
     return access_token, refresh_token
