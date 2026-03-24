@@ -1,3 +1,4 @@
+import secrets
 from datetime import timedelta
 from typing import Optional
 
@@ -60,3 +61,21 @@ async def create_access_and_refresh_tokens(username: str) -> tuple[str, str]:
         await redis.setex(key, ttl, refresh_token)
 
     return access_token, refresh_token
+
+
+async def check_refresh_token(payload: dict, refresh_token: str) -> bool:
+    """
+    Check if the refresh token is valid.
+    """
+    if payload.get("token_type") != "refresh":
+        return False
+    username = payload.get("sub")
+    if not username:
+        return False
+    async with redis_client.get_client() as redis:
+        stored_token = await redis.get(f"refresh_token:{username}")
+        if not stored_token:
+            return False
+        if not secrets.compare_digest(refresh_token, stored_token.decode()):
+            return False
+        return True
