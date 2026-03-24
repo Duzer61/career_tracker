@@ -11,6 +11,11 @@ class DatabaseConfig:
 @dataclass
 class Config:
     db: DatabaseConfig
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXP_MINUTES: int
+    REFRESH_TOKEN_EXP_DAYS: int
+    DEFAULT_TOKEN_LIFETIME: int = 30  # minutes
 
 
 def load_config() -> Config:
@@ -21,7 +26,11 @@ def load_config() -> Config:
         db=DatabaseConfig(
             db_url=f"postgresql+asyncpg://{env("POSTGRES_USER")}:{env("POSTGRES_PASSWORD")}"
             f"@{env("POSTGRES_HOST")}/{env("POSTGRES_DB")}"
-        )
+        ),
+        SECRET_KEY=env("SECRET_KEY"),
+        ALGORITHM=env("ALGORITHM"),
+        ACCESS_TOKEN_EXP_MINUTES=env("ACCESS_TOKEN_EXP_MINUTES"),
+        REFRESH_TOKEN_EXP_DAYS=env("REFRESH_TOKEN_EXP_DAYS"),
     )
 
 
