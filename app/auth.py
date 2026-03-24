@@ -2,10 +2,13 @@ import secrets
 from datetime import timedelta
 from typing import Optional
 
+from fastapi import HTTPException, status
 from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTError
 from passlib.context import CryptContext
 from utils import utc_now
 
+from app.api.schemas import RefreshTokenSchema
 from app.config import config as cf
 from app.db.redis import redis_client
 
@@ -79,3 +82,26 @@ async def check_refresh_token(payload: dict, refresh_token: str) -> bool:
         if not secrets.compare_digest(refresh_token, stored_token.decode()):
             return False
         return True
+
+
+async def get_username_from_refresh_token(refresh_token: RefreshTokenSchema) -> Optional[str]:
+    """
+    Get the username from the refresh token.
+    """
+    try:
+        token = refresh_token.refresh_token
+        payload: dict = jwt.decode(token, cf.SECRET_KEY, algorithms=[cf.ALGORITHM])
+        if await check_refresh_token(payload, token):
+            return payload.get("sub")
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            )
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired"
+        )
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
