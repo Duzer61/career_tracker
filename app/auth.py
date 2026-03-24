@@ -86,7 +86,7 @@ async def check_refresh_token(payload: dict, refresh_token: str) -> bool:
 
 async def get_username_from_refresh_token(refresh_token: RefreshTokenSchema) -> Optional[str]:
     """
-    Get the username from the refresh token.
+    Get the username from the refresh token. If the token is invalid, return None.
     """
     try:
         token = refresh_token.refresh_token
