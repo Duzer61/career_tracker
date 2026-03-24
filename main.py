@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -6,8 +7,19 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.api.routes import router
+from app.db.redis import redis_client
 
-app = FastAPI(title="Career tracker")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Connect to Redis
+    await redis_client.connect()
+    yield
+    # Close Redis connection
+    await redis_client.close()
+
+
+app = FastAPI(lifespan=lifespan, title="Career tracker")
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")

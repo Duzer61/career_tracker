@@ -9,8 +9,14 @@ class DatabaseConfig:
 
 
 @dataclass
+class RedisConfig:
+    redis_url: str
+
+
+@dataclass
 class Config:
     db: DatabaseConfig
+    redis: RedisConfig
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXP_MINUTES: int
@@ -26,6 +32,10 @@ def load_config() -> Config:
         db=DatabaseConfig(
             db_url=f"postgresql+asyncpg://{env("POSTGRES_USER")}:{env("POSTGRES_PASSWORD")}"
             f"@{env("POSTGRES_HOST")}/{env("POSTGRES_DB")}"
+        ),
+        redis=RedisConfig(
+            redis_url=f"redis://:{env("REDIS_PASSWORD")}@{env("REDIS_HOST")}"
+            f":{env("REDIS_PORT")}/0"
         ),
         SECRET_KEY=env("SECRET_KEY"),
         ALGORITHM=env("ALGORITHM"),
