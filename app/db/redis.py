@@ -40,12 +40,12 @@ class RedisClient:
         Get Redis client.
         """
         if not self.client:
-            await self.connect()
-        try:
-            return self.client
-        except Exception as e:
-            print(f"Ошибка при работе с Redis: {e}")
-            raise
+            try:
+                await self.connect()
+            except Exception as e:
+                print(f"Ошибка при работе с Redis: {e}")
+                raise
+        return self.client
 
 
 # Создаём экземпляр клиента Redis
