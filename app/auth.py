@@ -58,10 +58,10 @@ async def create_access_and_refresh_tokens(username: str) -> tuple[str, str]:
     refresh_token_expires = timedelta(days=cf.REFRESH_TOKEN_EXP_DAYS)
     refresh_token = create_jwt_token(refresh_payload, refresh_token_expires)
 
-    async with redis_client.get_client() as redis:
-        ttl = int(refresh_token_expires.total_seconds())  # TTL in seconds
-        key = f"refresh_token:{username}"
-        await redis.setex(key, ttl, refresh_token)
+    redis = await redis_client.get_client()
+    ttl = int(refresh_token_expires.total_seconds())  # TTL in seconds
+    key = f"refresh_token:{username}"
+    await redis.setex(key, ttl, refresh_token)
 
     return access_token, refresh_token
 
@@ -75,13 +75,13 @@ async def check_refresh_token(payload: dict, refresh_token: str) -> bool:
     username = payload.get("sub")
     if not username:
         return False
-    async with redis_client.get_client() as redis:
-        stored_token = await redis.get(f"refresh_token:{username}")
-        if not stored_token:
-            return False
-        if not secrets.compare_digest(refresh_token, stored_token.decode()):
-            return False
-        return True
+    redis = await redis_client.get_client()
+    stored_token = await redis.get(f"refresh_token:{username}")
+    if not stored_token:
+        return False
+    if not secrets.compare_digest(refresh_token, stored_token):
+        return False
+    return True
 
 
 async def get_username_from_refresh_token(refresh_token: RefreshTokenSchema) -> Optional[str]:
