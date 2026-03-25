@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 
+# from app.schemas import UserCreate, UserResponse
+
 router = APIRouter(prefix="/api", tags=["api"])
 
 

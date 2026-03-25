@@ -1,4 +1,4 @@
-from typing import Annotated, AsyncGenerator
+from typing import Annotated
 
 import redis.asyncio as redis
 from fastapi import Depends
@@ -32,16 +32,17 @@ class RedisClient:
         """
         if self.client:
             await self.client.close()
+            self.client = None
             print("🔌 Соединение с Redis закрыто")
 
-    async def get_client(self) -> AsyncGenerator[redis.Redis, None]:
+    async def get_client(self) -> redis.Redis:
         """
         Get Redis client.
         """
         if not self.client:
             await self.connect()
         try:
-            yield self.client
+            return self.client
         except Exception as e:
             print(f"Ошибка при работе с Redis: {e}")
             raise
