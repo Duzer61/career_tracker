@@ -23,3 +23,7 @@ class UserResponse(UserBase):
 
 class RefreshTokenSchema(BaseModel):
     refresh_token: str
+
+
+class AccessTokenSchema(BaseModel):
+    access_token: str

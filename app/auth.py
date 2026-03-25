@@ -8,9 +8,9 @@ from jose.exceptions import ExpiredSignatureError, JWTError
 from passlib.context import CryptContext
 from utils import utc_now
 
-from app.api.schemas import RefreshTokenSchema
 from app.config import config as cf
 from app.db.redis import redis_client
+from app.schemas import AccessTokenSchema, RefreshTokenSchema
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -105,3 +105,7 @@ async def get_username_from_refresh_token(refresh_token: RefreshTokenSchema) -> 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
+
+
+def get_username_from_access_token(access_token: AccessTokenSchema) -> Optional[str]:
+    pass
