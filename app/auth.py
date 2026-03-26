@@ -6,11 +6,11 @@ from fastapi import HTTPException, status
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
 from passlib.context import CryptContext
-from utils import utc_now
 
 from app.config import config as cf
 from app.db.redis import redis_client
 from app.schemas import AccessTokenSchema, RefreshTokenSchema
+from app.utils import utc_now
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

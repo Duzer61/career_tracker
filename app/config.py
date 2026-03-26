@@ -31,7 +31,7 @@ def load_config() -> Config:
     return Config(
         db=DatabaseConfig(
             db_url=f"postgresql+asyncpg://{env("POSTGRES_USER")}:{env("POSTGRES_PASSWORD")}"
-            f"@{env("POSTGRES_HOST")}/{env("POSTGRES_DB")}"
+            f"@{env("POSTGRES_HOST")}:{env("POSTGRES_PORT")}/{env("POSTGRES_DB")}"
         ),
         redis=RedisConfig(
             redis_url=f"redis://:{env("REDIS_PASSWORD")}@{env("REDIS_HOST")}"
