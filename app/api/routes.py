@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException, status
+from sqlalchemy import select
 
 from app.crud import create_user, get_user_by_login
 from app.db.database import SessionDep
+from app.db.models import User
 from app.schemas import UserCreate, UserResponse
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -25,3 +27,13 @@ async def register(user_data: UserCreate, session: SessionDep):
         )
     user = await create_user(session, user_data)
     return user
+
+
+@router.get("/users", response_model=list[UserResponse])  # TODO: remove this endpoint
+async def get_users(session: SessionDep):
+    """
+    Get all users (debug endpoint).
+    """
+    result = await session.execute(select(User))
+    users = result.scalars().all()
+    return users
