@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, Response, status
-from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
-from app.auth import authenticate_user, create_access_and_refresh_tokens, get_user_by_login
+from app.auth import (
+    authenticate_user,
+    create_access_and_refresh_tokens,
+    get_user_by_login,
+    set_cookie,
+)
 from app.crud import create_user
 from app.db.database import SessionDep
 from app.db.models import User
@@ -42,7 +46,7 @@ async def get_users(session: SessionDep):
 
 
 @router.post("/login")
-async def login(response: Response, user_data: UserCreate, session: SessionDep) -> JSONResponse:
+async def login(response: Response, user_data: UserCreate, session: SessionDep):
     """
     Authenticate user and return access and refresh tokens.
     """
@@ -52,11 +56,5 @@ async def login(response: Response, user_data: UserCreate, session: SessionDep) 
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect login or password"
         )
     access_token, refresh_token = await create_access_and_refresh_tokens(authenticated_user.login)
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
-        },
-    )
+    await set_cookie(response, access_token, refresh_token)
+    return {"message": "login successful"}

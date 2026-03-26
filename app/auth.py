@@ -2,7 +2,7 @@ import secrets
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Response, status
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
 from passlib.context import CryptContext
@@ -132,3 +132,28 @@ async def authenticate_user(session: AsyncSession, username: str, password: str)
     if not verify_password(password, user.hashed_password):
         return None
     return user
+
+
+async def set_cookie(response: Response, access_token, refresh_token):
+    """
+    Set cookies for access and refresh tokens.
+    """
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=cf.ENVIRON == "prod",
+        samesite="lax",
+        max_age=cf.ACCESS_TOKEN_EXP_MINUTES * 60,
+        path="/",
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=cf.ENVIRON == "prod",
+        samesite="lax",
+        max_age=cf.REFRESH_TOKEN_EXP_DAYS * 24 * 60 * 60,
+        path="/api",
+    )

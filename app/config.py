@@ -22,6 +22,7 @@ class Config:
     ACCESS_TOKEN_EXP_MINUTES: int
     REFRESH_TOKEN_EXP_DAYS: int
     DEFAULT_TOKEN_LIFETIME: int = 30  # minutes
+    ENVIRON: str = "dev"  # dev or prod
 
 
 def load_config() -> Config:
