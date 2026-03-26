@@ -1,4 +1,3 @@
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,14 +6,6 @@ from app.db.models import User
 from app.schemas import UserCreate
 
 # User crud
-
-
-async def get_user_by_login(session: AsyncSession, login: str) -> User | None:
-    """
-    Get user by login.
-    """
-    result = await session.execute(select(User).where(User.login == login))
-    return result.scalar_one_or_none()
 
 
 async def create_user(session: AsyncSession, user_data: UserCreate) -> User:

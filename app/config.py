@@ -39,8 +39,8 @@ def load_config() -> Config:
         ),
         SECRET_KEY=env("SECRET_KEY"),
         ALGORITHM=env("ALGORITHM"),
-        ACCESS_TOKEN_EXP_MINUTES=env("ACCESS_TOKEN_EXP_MINUTES"),
-        REFRESH_TOKEN_EXP_DAYS=env("REFRESH_TOKEN_EXP_DAYS"),
+        ACCESS_TOKEN_EXP_MINUTES=int(env("ACCESS_TOKEN_EXP_MINUTES")),
+        REFRESH_TOKEN_EXP_DAYS=int(env("REFRESH_TOKEN_EXP_DAYS")),
     )
 
 

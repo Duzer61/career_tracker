@@ -6,8 +6,11 @@ from fastapi import HTTPException, status
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
 from passlib.context import CryptContext
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config as cf
+from app.db.models import User
 from app.db.redis import redis_client
 from app.schemas import AccessTokenSchema, RefreshTokenSchema
 from app.utils import utc_now
@@ -51,7 +54,7 @@ async def create_access_and_refresh_tokens(username: str) -> tuple[str, str]:
     bound to the username, with TTL equal to REFRESH_TOKEN_EXP_DAYS.
     """
     access_payload = {"sub": username, "token_type": "access"}
-    access_token_expires = timedelta(minutes=cf.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=cf.ACCESS_TOKEN_EXP_MINUTES)
     access_token = create_jwt_token(access_payload, access_token_expires)
 
     refresh_payload = {"sub": username, "token_type": "refresh"}
@@ -109,3 +112,23 @@ async def get_username_from_refresh_token(refresh_token: RefreshTokenSchema) -> 
 
 def get_username_from_access_token(access_token: AccessTokenSchema) -> Optional[str]:
     pass
+
+
+async def get_user_by_login(session: AsyncSession, login: str) -> User | None:
+    """
+    Get user by login.
+    """
+    result = await session.execute(select(User).where(User.login == login))
+    return result.scalar_one_or_none()
+
+
+async def authenticate_user(session: AsyncSession, username: str, password: str) -> User | None:
+    """
+    Authenticate a user by username and password. Return the user if authenticated, None otherwise.
+    """
+    user = await get_user_by_login(session, username)
+    if not user:
+        return None
+    if not verify_password(password, user.hashed_password):
+        return None
+    return user
