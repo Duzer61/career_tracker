@@ -1,8 +1,9 @@
 import secrets
+import uuid
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import HTTPException, Response, status
+from fastapi import HTTPException, Request, Response, status
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
 from passlib.context import CryptContext
@@ -10,9 +11,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config as cf
+from app.db.database import SessionDep
 from app.db.models import User
 from app.db.redis import redis_client
-from app.schemas import AccessTokenSchema, RefreshTokenSchema
+from app.schemas import RefreshTokenSchema
 from app.utils import utc_now
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -32,11 +34,11 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_jwt_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_jwt_token(payload: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
     Create a JWT token.
     """
-    to_encode = data.copy()
+    to_encode = payload.copy()
 
     if expires_delta:
         expire = utc_now() + expires_delta
@@ -48,23 +50,35 @@ def create_jwt_token(data: dict, expires_delta: Optional[timedelta] = None) -> s
     return encoded_jwt
 
 
-async def create_access_and_refresh_tokens(username: str) -> tuple[str, str]:
+async def create_access_and_refresh_tokens(
+    username: str, session_id: str = None
+) -> tuple[str, str]:
     """
     Create access and refresh tokens and store the refresh token in Redis,
     bound to the username, with TTL equal to REFRESH_TOKEN_EXP_DAYS.
     """
-    access_payload = {"sub": username, "token_type": "access"}
+    # Generate session ID if not provided
+    if session_id is None:
+        session_id = str(uuid.uuid4())
+
+    access_payload = {"sub": username, "token_type": "access", "sid": session_id}
     access_token_expires = timedelta(minutes=cf.ACCESS_TOKEN_EXP_MINUTES)
     access_token = create_jwt_token(access_payload, access_token_expires)
 
-    refresh_payload = {"sub": username, "token_type": "refresh"}
+    refresh_payload = {"sub": username, "token_type": "refresh", "sid": session_id}
     refresh_token_expires = timedelta(days=cf.REFRESH_TOKEN_EXP_DAYS)
     refresh_token = create_jwt_token(refresh_payload, refresh_token_expires)
 
     redis = await redis_client.get_client()
     ttl = int(refresh_token_expires.total_seconds())  # TTL in seconds
-    key = f"refresh_token:{username}"
+
+    key = f"refresh_token:{username}:{session_id}"
     await redis.setex(key, ttl, refresh_token)
+
+    # Save a list of active sessions for the user
+    session_key = f"user_sessions:{username}"
+    await redis.sadd(session_key, session_id)
+    await redis.expire(session_key, ttl)
 
     return access_token, refresh_token
 
@@ -110,8 +124,52 @@ async def get_username_from_refresh_token(refresh_token: RefreshTokenSchema) -> 
         )
 
 
-def get_username_from_access_token(access_token: AccessTokenSchema) -> Optional[str]:
-    pass
+async def get_current_user(request: Request, session: SessionDep) -> User:
+    """
+    Get the current user from access token, validating session is still active.
+    """
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    try:
+        payload: dict = jwt.decode(access_token, cf.SECRET_KEY, algorithms=[cf.ALGORITHM])
+        username = payload.get("sub")
+        token_type = payload.get("token_type")
+        session_id = payload.get("sid")
+
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: missing username"
+            )
+        if token_type != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
+            )
+        if not session_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token: missing session ID"
+            )
+        # Check if the session is still active
+        redis = await redis_client.get_client()
+        session_key = f"user_sessions:{username}"
+        is_active = await redis.sismember(session_key, session_id)
+        if not is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session has been revoked. Please login again.",
+            )
+        # Get user from database
+        user: User = await session.scalar(select(User).where(User.login == username))
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+            )
+        return user
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {str(e)}"
+        )
 
 
 async def get_user_by_login(session: AsyncSession, login: str) -> User | None:
