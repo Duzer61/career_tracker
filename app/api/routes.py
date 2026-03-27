@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlalchemy import select
 
 from app.auth import (
     authenticate_user,
     create_access_and_refresh_tokens,
     get_user_by_login,
+    refresh_tokens,
     set_cookie,
 )
 from app.crud import create_user
@@ -58,3 +59,18 @@ async def login(response: Response, user_data: UserCreate, session: SessionDep):
     access_token, refresh_token = await create_access_and_refresh_tokens(authenticated_user.login)
     await set_cookie(response, access_token, refresh_token)
     return {"message": "login successful"}
+
+
+@router.post("/refresh")
+async def refresh(request: Request, response: Response, session: SessionDep):
+    """
+    Refresh access and refresh tokens.
+    """
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token not found"
+        )
+    new_access_token, new_refresh_token = await refresh_tokens(refresh_token)
+    await set_cookie(response, new_access_token, new_refresh_token)
+    return {"message": "Tokens refreshed successfully"}

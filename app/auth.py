@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import HTTPException, Request, Response, status
 from jose import jwt
-from jose.exceptions import ExpiredSignatureError, JWTError
+from jose.exceptions import JWTError
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +14,6 @@ from app.config import config as cf
 from app.db.database import SessionDep
 from app.db.models import User
 from app.db.redis import redis_client
-from app.schemas import RefreshTokenSchema
 from app.utils import utc_now
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -83,45 +82,47 @@ async def create_access_and_refresh_tokens(
     return access_token, refresh_token
 
 
-async def check_refresh_token(payload: dict, refresh_token: str) -> bool:
+async def check_and_get_refresh_token_payload(refresh_token: str) -> dict | None:
     """
-    Check if the refresh token is valid.
-    """
-    if payload.get("token_type") != "refresh":
-        return False
-    username = payload.get("sub")
-    if not username:
-        return False
-    redis = await redis_client.get_client()
-    stored_token = await redis.get(f"refresh_token:{username}")
-    if not stored_token:
-        return False
-    if not secrets.compare_digest(refresh_token, stored_token):
-        return False
-    return True
-
-
-async def get_username_from_refresh_token(refresh_token: RefreshTokenSchema) -> Optional[str]:
-    """
-    Get the username from the refresh token. If the token is invalid, return None.
+    Check if the refresh token is valid, return payload or None.
     """
     try:
-        token = refresh_token.refresh_token
-        payload: dict = jwt.decode(token, cf.SECRET_KEY, algorithms=[cf.ALGORITHM])
-        if await check_refresh_token(payload, token):
-            return payload.get("sub")
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
-            )
-    except ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired"
-        )
+        payload: dict = jwt.decode(refresh_token, cf.SECRET_KEY, algorithms=[cf.ALGORITHM])
     except JWTError:
+        return None
+
+    username = payload.get("sub")
+    token_type = payload.get("token_type")
+    session_id = payload.get("sid")
+
+    if not username or not token_type or not session_id:
+        return None
+    if token_type != "refresh":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
+    # Check refresh token in Redis
+    redis = await redis_client.get_client()
+    key = f"refresh_token:{username}:{session_id}"
+    stored_token = await redis.get(key)
+    if not stored_token or not secrets.compare_digest(refresh_token, stored_token):
+        return None
+    return payload
+
+
+async def refresh_tokens(refresh_token: str) -> dict:
+    """
+    Refresh access and refresh tokens.
+    """
+    payload = await check_and_get_refresh_token_payload(refresh_token)
+    if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
+    username = payload.get("sub")
+    session_id = payload.get("sid")
+    new_access_token, new_refresh_token = await create_access_and_refresh_tokens(
+        username, session_id
+    )
+    return new_access_token, new_refresh_token
 
 
 async def get_current_user(request: Request, session: SessionDep) -> User:
@@ -213,5 +214,5 @@ async def set_cookie(response: Response, access_token, refresh_token):
         secure=cf.ENVIRON == "prod",
         samesite="lax",
         max_age=cf.REFRESH_TOKEN_EXP_DAYS * 24 * 60 * 60,
-        path="/api",
+        path="/",
     )
