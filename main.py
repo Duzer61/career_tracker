@@ -6,7 +6,8 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app.api.routes import router
+from app.api.auth_routers import router as auth_router
+from app.api.user_routes import router as user_router
 from app.db.redis import redis_client
 
 
@@ -23,7 +24,8 @@ app = FastAPI(lifespan=lifespan, title="Career tracker")
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
-app.include_router(router)
+app.include_router(auth_router)
+app.include_router(user_router)
 
 
 @app.get("/")

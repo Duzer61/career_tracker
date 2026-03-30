@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Request, Response, status
-from sqlalchemy import select
 
 from app.auth import (
     authenticate_user,
@@ -15,12 +14,7 @@ from app.db.database import SessionDep
 from app.db.models import User
 from app.schemas import UserCreate, UserResponse
 
-router = APIRouter(prefix="/api", tags=["api"])
-
-
-@router.get("/test_page")
-async def test_page():
-    return {"message": "Hello World!"}
+router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -36,16 +30,6 @@ async def register(user_data: UserCreate, session: SessionDep):
         )
     user = await create_user(session, user_data)
     return user
-
-
-@router.get("/users", response_model=list[UserResponse])  # TODO: remove this endpoint
-async def get_users(session: SessionDep):
-    """
-    Get all users (debug endpoint).
-    """
-    result = await session.execute(select(User))
-    users = result.scalars().all()
-    return users
 
 
 @router.post("/login")
