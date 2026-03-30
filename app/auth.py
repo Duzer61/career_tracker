@@ -132,12 +132,10 @@ async def refresh_tokens(refresh_token: str) -> dict:
     return new_access_token, new_refresh_token
 
 
-async def get_current_user_with_session_id(
-    request: Request, session: SessionDep
-) -> tuple[User, str]:
+async def get_current_username_with_session_id(request: Request) -> tuple[str, str]:
     """
-    Get the current user from access token, validating session is still active.
-    Return user and session ID.
+    Get the current username from access token, validating session is still active.
+    Return username and session ID.
     """
     access_token = request.cookies.get("access_token")
     if not access_token:
@@ -170,17 +168,25 @@ async def get_current_user_with_session_id(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Session has been revoked. Please login again.",
             )
-        # Get user from database
-        user: User = await session.scalar(select(User).where(User.login == username))
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
-            )
-        return user, session_id
+        return username, session_id
     except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {str(e)}"
         )
+
+
+async def get_current_user_with_session_id(
+    request: Request, session: SessionDep
+) -> tuple[User, str]:
+    """
+    Get the current User from access token. Return User and session ID.
+    """
+    username, session_id = await get_current_username_with_session_id(request)
+    # Get user from database
+    user: User = await session.scalar(select(User).where(User.login == username))
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    return user, session_id
 
 
 async def get_current_user(
@@ -210,6 +216,28 @@ async def delete_refresh_token_and_session_id(request: Request) -> None:
         # Remove session ID from active sessions
         session_key = f"user_sessions:{username}"
         await redis.srem(session_key, session_id)
+
+
+async def delete_all_user_sessions(request: Request) -> None:
+    """
+    Delete all refresh tokens and session IDs for a user from Redis.
+    """
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    payload = await get_token_payload(access_token)
+    username = payload.get("sub")
+    if username:
+        redis = await redis_client.get_client()
+        session_key = f"user_sessions:{username}"
+        sessions = await redis.smembers(session_key)
+
+        # Delete all refresh tokens
+        for session_id in sessions:
+            key = f"refresh_token:{username}:{session_id}"
+            await redis.delete(key)
+        # Remove all session IDs
+        await redis.delete(session_key)
 
 
 async def get_user_by_login(session: AsyncSession, login: str) -> User | None:

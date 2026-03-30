@@ -4,6 +4,7 @@ from sqlalchemy import select
 from app.auth import (
     authenticate_user,
     create_access_and_refresh_tokens,
+    delete_all_user_sessions,
     delete_refresh_token_and_session_id,
     get_user_by_login,
     refresh_tokens,
@@ -86,3 +87,14 @@ async def logout(request: Request, response: Response):
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
     return {"message": "logout successful"}
+
+
+@router.post("/logout-all")
+async def logout_all_devises(request: Request, response: Response):
+    """
+    Logout all user sessions.
+    """
+    await delete_all_user_sessions(request)
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return {"message": "Logged out from all devices"}
