@@ -4,6 +4,7 @@ from sqlalchemy import select
 from app.auth import (
     authenticate_user,
     create_access_and_refresh_tokens,
+    delete_refresh_token_and_session_id,
     get_user_by_login,
     refresh_tokens,
     set_cookie,
@@ -62,7 +63,7 @@ async def login(response: Response, user_data: UserCreate, session: SessionDep):
 
 
 @router.post("/refresh")
-async def refresh(request: Request, response: Response, session: SessionDep):
+async def refresh(request: Request, response: Response):
     """
     Refresh access and refresh tokens.
     """
@@ -74,3 +75,14 @@ async def refresh(request: Request, response: Response, session: SessionDep):
     new_access_token, new_refresh_token = await refresh_tokens(refresh_token)
     await set_cookie(response, new_access_token, new_refresh_token)
     return {"message": "Tokens refreshed successfully"}
+
+
+@router.post("/logout")
+async def logout(request: Request, response: Response):
+    """
+    Logout current user session.
+    """
+    await delete_refresh_token_and_session_id(request)
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    return {"message": "logout successful"}

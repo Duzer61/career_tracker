@@ -3,7 +3,7 @@ import uuid
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import HTTPException, Request, Response, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from jose import jwt
 from jose.exceptions import JWTError
 from passlib.context import CryptContext
@@ -82,15 +82,22 @@ async def create_access_and_refresh_tokens(
     return access_token, refresh_token
 
 
+async def get_token_payload(token: str) -> dict:
+    """
+    Check if the token is valid, return payload.
+    """
+    try:
+        payload: dict = jwt.decode(token, cf.SECRET_KEY, algorithms=[cf.ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token")
+    return payload
+
+
 async def check_and_get_refresh_token_payload(refresh_token: str) -> dict | None:
     """
     Check if the refresh token is valid, return payload or None.
     """
-    try:
-        payload: dict = jwt.decode(refresh_token, cf.SECRET_KEY, algorithms=[cf.ALGORITHM])
-    except JWTError:
-        return None
-
+    payload = await get_token_payload(refresh_token)
     username = payload.get("sub")
     token_type = payload.get("token_type")
     session_id = payload.get("sid")
@@ -125,9 +132,12 @@ async def refresh_tokens(refresh_token: str) -> dict:
     return new_access_token, new_refresh_token
 
 
-async def get_current_user(request: Request, session: SessionDep) -> User:
+async def get_current_user_with_session_id(
+    request: Request, session: SessionDep
+) -> tuple[User, str]:
     """
     Get the current user from access token, validating session is still active.
+    Return user and session ID.
     """
     access_token = request.cookies.get("access_token")
     if not access_token:
@@ -166,16 +176,45 @@ async def get_current_user(request: Request, session: SessionDep) -> User:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
-        return user
+        return user, session_id
     except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {str(e)}"
         )
 
 
+async def get_current_user(
+    user_with_session: tuple[User, str] = Depends(get_current_user_with_session_id),
+) -> User:
+    """
+    Get the current user from access token.
+    """
+    return user_with_session[0]
+
+
+async def delete_refresh_token_and_session_id(request: Request) -> None:
+    """
+    Delete refresh token and session ID for current user from Redis.
+    """
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    payload = await get_token_payload(access_token)
+    username = payload.get("sub")
+    session_id = payload.get("sid")
+    if username and session_id:
+        redis = await redis_client.get_client()
+        # Delete refresh token
+        key = f"refresh_token:{username}:{session_id}"
+        await redis.delete(key)
+        # Remove session ID from active sessions
+        session_key = f"user_sessions:{username}"
+        await redis.srem(session_key, session_id)
+
+
 async def get_user_by_login(session: AsyncSession, login: str) -> User | None:
     """
-    Get user by login.
+    Get user by login from database.
     """
     result = await session.execute(select(User).where(User.login == login))
     return result.scalar_one_or_none()
