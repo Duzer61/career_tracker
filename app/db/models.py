@@ -18,11 +18,12 @@ class User(Base):
     login: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_admin: Mapped[bool] = mapped_column(default=False)
 
     cards: Mapped[list["Card"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<User(id={self.id}, login={self.login})>"
+        return f"<User(id={self.id}, login={self.login}, is_admin={self.is_admin})>"
 
 
 class CardStatus(str, enum.Enum):

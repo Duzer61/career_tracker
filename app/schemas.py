@@ -21,6 +21,10 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
+class AdminUserResponse(UserResponse):
+    is_admin: bool
+
+
 class RefreshTokenSchema(BaseModel):
     refresh_token: str
 
