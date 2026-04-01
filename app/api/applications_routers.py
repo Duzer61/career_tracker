@@ -15,7 +15,6 @@ async def get_applications(db: SessionDep, current_user: User = Depends(get_curr
     Get all applications for current user.
     """
     applications = await get_applications_obj(db, current_user)
-    # application_responses = [ApplicationResponse.model_validate(application) for application in applications]
     return applications
 
 
