@@ -175,15 +175,13 @@ async def get_current_username_with_session_id(request: Request) -> tuple[str, s
         )
 
 
-async def get_current_user_with_session_id(
-    request: Request, session: SessionDep
-) -> tuple[User, str]:
+async def get_current_user_with_session_id(request: Request, db: SessionDep) -> tuple[User, str]:
     """
     Get the current User from access token. Return User and session ID.
     """
     username, session_id = await get_current_username_with_session_id(request)
     # Get user from database
-    user: User = await session.scalar(select(User).where(User.login == username))
+    user: User = await db.scalar(select(User).where(User.login == username))
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     return user, session_id
@@ -240,19 +238,19 @@ async def delete_all_user_sessions(request: Request) -> None:
         await redis.delete(session_key)
 
 
-async def get_user_by_login(session: AsyncSession, login: str) -> User | None:
+async def get_user_by_login(db: AsyncSession, login: str) -> User | None:
     """
     Get user by login from database.
     """
-    result = await session.execute(select(User).where(User.login == login))
+    result = await db.execute(select(User).where(User.login == login))
     return result.scalar_one_or_none()
 
 
-async def authenticate_user(session: AsyncSession, username: str, password: str) -> User | None:
+async def authenticate_user(db: AsyncSession, username: str, password: str) -> User | None:
     """
     Authenticate a user by username and password. Return the user if authenticated, None otherwise.
     """
-    user = await get_user_by_login(session, username)
+    user = await get_user_by_login(db, username)
     if not user:
         return None
     if not verify_password(password, user.hashed_password):

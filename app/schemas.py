@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.db.models import Card
+
 # User schemas
 
 
@@ -31,3 +33,29 @@ class RefreshTokenSchema(BaseModel):
 
 class AccessTokenSchema(BaseModel):
     access_token: str
+
+
+class CardResponse(BaseModel):
+    id: int
+    user_id: int
+    status: str
+    company_name: str
+    contacts: str | None
+    comments: str | None
+    created_at: datetime
+    updated_at: datetime
+    days_since_creation: int
+
+    @classmethod
+    def from_orm(cls, card: Card):
+        return cls(
+            id=card.id,
+            user_id=card.user_id,
+            status=card.status,
+            company_name=card.company_name,
+            contacts=card.contacts,
+            comments=card.comments,
+            created_at=card.created_at,
+            updated_at=card.updated_at,
+            days_since_creation=card.days_since_creation,
+        )

@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.api.auth_routers import router as auth_router
+from app.api.board_routers import router as board_router
 from app.api.user_routes import router as user_router
 from app.db.redis import redis_client
 
@@ -26,6 +27,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 app.include_router(auth_router)
 app.include_router(user_router)
+app.include_router(board_router)
 
 
 @app.get("/")

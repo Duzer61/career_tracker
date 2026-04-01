@@ -16,11 +16,11 @@ async def test_page():
 
 
 @router.get("", response_model=list[UserResponse])  # TODO: remove this endpoint
-async def get_users(session: SessionDep):
+async def get_users(db: SessionDep):
     """
     Get all users (debug endpoint).
     """
-    result = await session.execute(select(User))
+    result = await db.execute(select(User))
     users = result.scalars().all()
     return users
 
@@ -37,14 +37,14 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 async def delete_current_user(
     request: Request,
     response: Response,
-    session: SessionDep,
+    db: SessionDep,
     current_user: User = Depends(get_current_user),
 ):
     """
     Delete current user.
     """
     # Delete user from database
-    await delete_user(session, current_user)
+    await delete_user(db, current_user)
     # Delete all user sessions
     await delete_all_user_sessions(request)
     # Delete cookies

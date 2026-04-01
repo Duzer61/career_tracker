@@ -18,26 +18,26 @@ router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, session: SessionDep):
+async def register(user_data: UserCreate, db: SessionDep):
     """
     Register a new user.
     """
-    db_user = await get_user_by_login(session, user_data.login)
+    db_user = await get_user_by_login(db, user_data.login)
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User with this login already exists",
         )
-    user = await create_user(session, user_data)
+    user = await create_user(db, user_data)
     return user
 
 
 @router.post("/login")
-async def login(response: Response, user_data: UserCreate, session: SessionDep):
+async def login(response: Response, user_data: UserCreate, db: SessionDep):
     """
     Authenticate user and return access and refresh tokens.
     """
-    authenticated_user: User = await authenticate_user(session, user_data.login, user_data.password)
+    authenticated_user: User = await authenticate_user(db, user_data.login, user_data.password)
     if not authenticated_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect login or password"
