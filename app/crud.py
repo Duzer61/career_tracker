@@ -3,8 +3,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_password_hash
-from app.db.models import Card, User
-from app.schemas import UserCreate
+from app.db.models import Application, User
+from app.schemas import ApplicationCreate, UserCreate
 
 # User crud
 
@@ -36,13 +36,35 @@ async def delete_user(db: AsyncSession, current_user: User) -> None:  # TODO: Д
         raise ValueError(f"Error deleting user: {e}")
 
 
-# Board, cards crud
+# Board, applications crud
 
 
-async def get_cards(db: AsyncSession, current_user: User) -> list[Card]:
+async def get_applications_obj(db: AsyncSession, current_user: User) -> list[Application]:
     """
-    Return all cards for current user.
+    Return all applications for current user.
     """
-    result = await db.scalars(select(Card).where(Card.user_id == current_user.id))
-    cards = result.all()
-    return cards
+    result = await db.scalars(select(Application).where(Application.user_id == current_user.id))
+    applications = result.all()
+    return applications
+
+
+async def create_application_obj(
+    app_data: ApplicationCreate, db: AsyncSession, current_user: User
+) -> Application:
+    """
+    Create a new application.
+    """
+    app = Application(
+        user_id=current_user.id,
+        company_name=app_data.company_name,
+        contacts=app_data.contacts,
+        comments=app_data.comments,
+        vacancy_url=app_data.vacancy_url,
+    )
+    db.add(app)
+    try:
+        await db.commit()
+        await db.refresh(app)
+        return app
+    except IntegrityError:
+        raise ValueError("Error creating application")

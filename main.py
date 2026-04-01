@@ -6,8 +6,8 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app.api.applications_routers import router as board_router
 from app.api.auth_routers import router as auth_router
-from app.api.board_routers import router as board_router
 from app.api.user_routes import router as user_router
 from app.db.redis import redis_client
 

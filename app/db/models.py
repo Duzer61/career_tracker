@@ -20,13 +20,15 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_admin: Mapped[bool] = mapped_column(default=False)
 
-    cards: Mapped[list["Card"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    applications: Mapped[list["Application"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, login={self.login}, is_admin={self.is_admin})>"
 
 
-class CardStatus(str, enum.Enum):
+class ApplicationStatus(str, enum.Enum):
     CREATED = "created"
     HR_INTERVIEW = "hr_interview"
     TECH_INTERVIEW = "tech_interview"
@@ -36,21 +38,22 @@ class CardStatus(str, enum.Enum):
     ARCHIVED = "archived"
 
 
-class Card(Base):
-    __tablename__ = "cards"
+class Application(Base):
+    __tablename__ = "applications"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    status: Mapped[CardStatus] = mapped_column(
-        Enum(CardStatus), nullable=False, default=CardStatus.CREATED
+    status: Mapped[ApplicationStatus] = mapped_column(
+        Enum(ApplicationStatus), nullable=False, default=ApplicationStatus.CREATED
     )
     company_name: Mapped[str] = mapped_column(String(255), nullable=False)
     contacts: Mapped[str] = mapped_column(String(500), nullable=True)
     comments: Mapped[str] = mapped_column(Text, nullable=True)
+    vacancy_url: Mapped[str] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
-    user: Mapped["User"] = relationship(back_populates="cards")
+    user: Mapped["User"] = relationship(back_populates="applications")
 
     @property
     def days_since_creation(self) -> int:
@@ -58,4 +61,4 @@ class Card(Base):
         return (utc_now() - self.created_at).days
 
     def __repr__(self):
-        return f"<Card(id={self.id}, company={self.company_name}, status={self.status})>"
+        return f"<Application(id={self.id}, company={self.company_name}, status={self.status})>"

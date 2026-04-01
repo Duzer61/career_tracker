@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from app.db.models import Card
+from app.db.models import ApplicationStatus
 
 # User schemas
 
@@ -35,27 +35,24 @@ class AccessTokenSchema(BaseModel):
     access_token: str
 
 
-class CardResponse(BaseModel):
+class ApplicationResponse(BaseModel):
     id: int
     user_id: int
-    status: str
+    status: ApplicationStatus
     company_name: str
-    contacts: str | None
-    comments: str | None
+    contacts: str | None = None
+    comments: str | None = None
+    vacancy_url: str | None = None
     created_at: datetime
     updated_at: datetime
     days_since_creation: int
 
-    @classmethod
-    def from_orm(cls, card: Card):
-        return cls(
-            id=card.id,
-            user_id=card.user_id,
-            status=card.status,
-            company_name=card.company_name,
-            contacts=card.contacts,
-            comments=card.comments,
-            created_at=card.created_at,
-            updated_at=card.updated_at,
-            days_since_creation=card.days_since_creation,
-        )
+    class Config:
+        from_attributes = True
+
+
+class ApplicationCreate(BaseModel):
+    company_name: str = Field(..., min_length=1, max_length=255)
+    contacts: str | None = None
+    comments: str | None = None
+    vacancy_url: str | None = None
