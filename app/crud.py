@@ -66,5 +66,9 @@ async def create_application_obj(
         await db.commit()
         await db.refresh(app)
         return app
-    except IntegrityError:
-        raise ValueError("Error creating application")
+    except IntegrityError as e:
+        await db.rollback()
+        raise ValueError(f"Database integrity error while creating application:: {e}")
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise ValueError(f"Database error while creating application: {e}")
