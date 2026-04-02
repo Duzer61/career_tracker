@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 
 from app.auth import get_current_user
-from app.crud import create_application, get_applications, update_application
+from app.crud import create_application, get_application, get_applications, update_application
 from app.db.database import SessionDep
 from app.db.models import User
 from app.schemas import ApplicationCreate, ApplicationResponse, ApplicationUpdate
@@ -16,6 +16,17 @@ async def get_applications_endpoint(db: SessionDep, current_user: User = Depends
     """
     applications = await get_applications(db, current_user)
     return applications
+
+
+@router.get("/{application_id}", response_model=ApplicationResponse)
+async def get_application_endpoint(
+    application_id: int, db: SessionDep, current_user: User = Depends(get_current_user)
+):
+    """
+    Get application by id. Check if current user is the owner.
+    """
+    application = await get_application(application_id, db, current_user)
+    return application
 
 
 @router.post("", response_model=ApplicationResponse, status_code=status.HTTP_201_CREATED)
