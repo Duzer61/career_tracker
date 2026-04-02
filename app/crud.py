@@ -1,10 +1,11 @@
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_password_hash
 from app.db.models import Application, User
-from app.schemas import ApplicationCreate, UserCreate
+from app.schemas import ApplicationCreate, ApplicationUpdate, UserCreate
 
 # User crud
 
@@ -39,7 +40,7 @@ async def delete_user(db: AsyncSession, current_user: User) -> None:  # TODO: Д
 # Board, applications crud
 
 
-async def get_applications_obj(db: AsyncSession, current_user: User) -> list[Application]:
+async def get_applications(db: AsyncSession, current_user: User) -> list[Application]:
     """
     Return all applications for current user.
     """
@@ -48,7 +49,7 @@ async def get_applications_obj(db: AsyncSession, current_user: User) -> list[App
     return applications
 
 
-async def create_application_obj(
+async def create_application(
     app_data: ApplicationCreate, db: AsyncSession, current_user: User
 ) -> Application:
     """
@@ -72,3 +73,38 @@ async def create_application_obj(
     except SQLAlchemyError as e:
         await db.rollback()
         raise ValueError(f"Database error while creating application: {e}")
+
+
+async def get_application(app_id: int, db: AsyncSession, current_user: User) -> Application:
+    """
+    Return application by id. Check if it belongs to current user.
+    """
+    application = await db.scalar(
+        select(Application).where(Application.id == app_id, Application.user_id == current_user.id)
+    )
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return application
+
+
+async def update_application(
+    app_id: int, new_app_data: ApplicationUpdate, db: AsyncSession, current_user: User
+):
+    """
+    Update an application.
+    """
+    application = await get_application(app_id, db, current_user)
+    update_data = new_app_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(application, key, value)
+
+    try:
+        await db.commit()
+        await db.refresh(application)
+        return application
+    except IntegrityError as e:
+        await db.rollback()
+        raise ValueError(f"Database integrity error while updating application:: {e}")
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise ValueError(f"Error updating application: {e}")

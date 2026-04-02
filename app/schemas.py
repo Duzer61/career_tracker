@@ -56,3 +56,8 @@ class ApplicationCreate(BaseModel):
     contacts: str | None = None
     comments: str | None = None
     vacancy_url: str | None = None
+
+
+class ApplicationUpdate(ApplicationCreate):
+    company_name: str | None = Field(None, min_length=1, max_length=255)
+    status: ApplicationStatus | None = None
