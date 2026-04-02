@@ -17,6 +17,74 @@ let currentUser = null;
 let applications = [];
 let editingApplicationId = null;
 
+// Refresh token tracking
+let refreshInProgress = false;
+
+// Helper function to make authenticated requests with auto-refresh
+async function authenticatedFetch(url, options = {}) {
+    const response = await fetch(url, {
+        ...options,
+        credentials: 'include'
+    });
+
+    // If token expired, try to refresh
+    if (response.status === 401) {
+        console.log('Token expired, attempting refresh...');
+        
+        // If refresh already in progress, wait for it
+        if (refreshInProgress) {
+            console.log('Waiting for refresh to complete...');
+            await new Promise(resolve => {
+                const checkInterval = setInterval(() => {
+                    if (!refreshInProgress) {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 100);
+            });
+            // Retry the original request with new token
+            return fetch(url, {
+                ...options,
+                credentials: 'include'
+            });
+        }
+
+        // Try to refresh token
+        refreshInProgress = true;
+        try {
+            const refreshResponse = await fetch(`${API_BASE}/auth/refresh`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (refreshResponse.ok) {
+                console.log('Token refreshed successfully');
+                // Retry the original request
+                return fetch(url, {
+                    ...options,
+                    credentials: 'include'
+                });
+            } else {
+                console.log('Refresh failed, logging out');
+                // Refresh failed - logout
+                refreshInProgress = false;
+                currentUser = null;
+                showAuth();
+                throw new Error('Session expired. Please login again.');
+            }
+        } catch (error) {
+            refreshInProgress = false;
+            currentUser = null;
+            showAuth();
+            throw error;
+        } finally {
+            refreshInProgress = false;
+        }
+    }
+
+    return response;
+}
+
 // DOM Elements - will be initialized after DOM loads
 let authContainer, appContainer, loginForm, registerForm, authMessage;
 let usernameDisplay, logoutBtn, addApplicationBtn, kanbanBoard;
@@ -115,9 +183,7 @@ function setupEventListeners() {
 async function checkAuth() {
     try {
         console.log('Checking authentication...');
-        const response = await fetch(`${API_BASE}/users/me`, {
-            credentials: 'include'
-        });
+        const response = await authenticatedFetch(`${API_BASE}/users/me`);
         console.log('Auth check response:', response.status);
         if (response.ok) {
             currentUser = await response.json();
@@ -243,9 +309,7 @@ function switchTab(tab) {
 async function loadApplications() {
     try {
         console.log('Loading applications...');
-        const response = await fetch(`${API_BASE}/applications`, {
-            credentials: 'include'
-        });
+        const response = await authenticatedFetch(`${API_BASE}/applications`);
         if (!response.ok) throw new Error('Failed to load applications');
         applications = await response.json();
         console.log('Applications loaded:', applications.length);
@@ -270,18 +334,16 @@ async function handleApplicationSubmit(e) {
     try {
         let response;
         if (editingApplicationId) {
-            response = await fetch(`${API_BASE}/applications/${editingApplicationId}`, {
+            response = await authenticatedFetch(`${API_BASE}/applications/${editingApplicationId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(applicationData),
-                credentials: 'include'
+                body: JSON.stringify(applicationData)
             });
         } else {
-            response = await fetch(`${API_BASE}/applications`, {
+            response = await authenticatedFetch(`${API_BASE}/applications`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(applicationData),
-                credentials: 'include'
+                body: JSON.stringify(applicationData)
             });
         }
 
@@ -301,9 +363,8 @@ async function deleteApplication(applicationId) {
     if (!confirm('Удалить заявку?')) return;
 
     try {
-        const response = await fetch(`${API_BASE}/applications/${applicationId}`, {
-            method: 'DELETE',
-            credentials: 'include'
+        const response = await authenticatedFetch(`${API_BASE}/applications/${applicationId}`, {
+            method: 'DELETE'
         });
 
         if (response.ok) {
@@ -318,11 +379,10 @@ async function deleteApplication(applicationId) {
 
 async function updateApplicationStatus(applicationId, newStatus) {
     try {
-        const response = await fetch(`${API_BASE}/applications/${applicationId}`, {
+        const response = await authenticatedFetch(`${API_BASE}/applications/${applicationId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus }),
-            credentials: 'include'
+            body: JSON.stringify({ status: newStatus })
         });
 
         if (response.ok) {
