@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,9 +42,13 @@ async def delete_user(db: AsyncSession, current_user: User) -> None:  # TODO: Д
 
 async def get_applications(db: AsyncSession, current_user: User) -> list[Application]:
     """
-    Return all applications for current user.
+    Return all applications for current user. Ordered by creation date. Descending.
     """
-    result = await db.scalars(select(Application).where(Application.user_id == current_user.id))
+    result = await db.scalars(
+        select(Application)
+        .where(Application.user_id == current_user.id)
+        .order_by(desc(Application.created_at))
+    )
     applications = result.all()
     return applications
 
