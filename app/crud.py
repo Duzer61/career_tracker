@@ -108,3 +108,17 @@ async def update_application(
     except SQLAlchemyError as e:
         await db.rollback()
         raise ValueError(f"Error updating application: {e}")
+
+
+async def delete_application(application_id: int, db: AsyncSession, current_user: User) -> None:
+    """
+    Delete an application.
+    """
+    application = await get_application(application_id, db, current_user)
+    try:
+        await db.delete(application)
+        await db.commit()
+        return
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise ValueError(f"Error deleting application: {e}")

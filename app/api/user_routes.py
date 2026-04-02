@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy import select
 
 from app.auth import delete_all_user_sessions, get_current_user
@@ -33,7 +33,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.delete("/me", status_code=204)
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_current_user(
     request: Request,
     response: Response,
