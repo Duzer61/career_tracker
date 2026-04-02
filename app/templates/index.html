@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Career Tracker - Канбан доска</title>
+    <title>Career Tracker - Карьерный монитор</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -33,7 +33,7 @@
 
     <div id="app-container" class="hidden">
         <header>
-            <h1>Канбан доска</h1>
+            <h1>Карьерный монитор</h1>
             <div class="user-info">
                 <span id="username-display"></span>
                 <button id="logout-btn" class="btn-secondary">Выйти</button>
@@ -89,6 +89,19 @@
                     <button type="submit" class="btn-primary">Сохранить</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal for logout confirmation -->
+    <div id="logout-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Подтверждение выхода</h2>
+            <p>Вы действительно хотите выйти?</p>
+            <div class="form-actions">
+                <button type="button" id="cancel-logout-btn" class="btn-secondary">Отмена</button>
+                <button type="button" id="confirm-logout-btn" class="btn-primary">Выйти</button>
+            </div>
         </div>
     </div>
 

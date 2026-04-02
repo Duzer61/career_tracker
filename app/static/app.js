@@ -89,6 +89,7 @@ async function authenticatedFetch(url, options = {}) {
 let authContainer, appContainer, loginForm, registerForm, authMessage;
 let usernameDisplay, logoutBtn, addApplicationBtn, kanbanBoard;
 let applicationModal, applicationForm, modalTitle, closeModal, cancelBtn;
+let logoutModal, confirmLogoutBtn, cancelLogoutBtn;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -109,6 +110,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalTitle = document.getElementById('modal-title');
     closeModal = document.querySelector('.close-modal');
     cancelBtn = document.getElementById('cancel-btn');
+    logoutModal = document.getElementById('logout-modal');
+    confirmLogoutBtn = document.getElementById('confirm-logout-btn');
+    cancelLogoutBtn = document.getElementById('cancel-logout-btn');
     
     console.log('Elements initialized:', {
         authContainer: !!authContainer,
@@ -147,7 +151,25 @@ function setupEventListeners() {
 
     // Logout
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
+        logoutBtn.addEventListener('click', showLogoutModal);
+    }
+    
+    // Logout modal
+    if (confirmLogoutBtn) {
+        confirmLogoutBtn.addEventListener('click', handleLogout);
+    }
+    if (cancelLogoutBtn) {
+        cancelLogoutBtn.addEventListener('click', closeLogoutModal);
+    }
+    // Close logout modal on clicking X or outside modal
+    const logoutCloseModal = logoutModal?.querySelector('.close-modal');
+    if (logoutCloseModal) {
+        logoutCloseModal.addEventListener('click', closeLogoutModal);
+    }
+    if (logoutModal) {
+        logoutModal.addEventListener('click', (e) => {
+            if (e.target === logoutModal) closeLogoutModal();
+        });
     }
 
     // Add application
@@ -266,7 +288,20 @@ async function handleRegister(e) {
     }
 }
 
+function showLogoutModal() {
+    if (logoutModal) {
+        logoutModal.classList.remove('hidden');
+    }
+}
+
+function closeLogoutModal() {
+    if (logoutModal) {
+        logoutModal.classList.add('hidden');
+    }
+}
+
 async function handleLogout() {
+    closeLogoutModal();
     try {
         await fetch(`${API_BASE}/auth/logout`, {
             method: 'POST',
