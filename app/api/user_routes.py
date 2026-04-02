@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 
 from app.auth import delete_all_user_sessions, get_current_user
 from app.crud import delete_user
 from app.db.database import SessionDep
 from app.db.models import User
-from app.schemas import UserResponse
+from app.schemas import AdminUserResponse, UserResponse
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -15,11 +15,15 @@ async def test_page():
     return {"status": "Ok!"}
 
 
-@router.get("", response_model=list[UserResponse])  # TODO: remove this endpoint
-async def get_users(db: SessionDep):
+@router.get("", response_model=list[AdminUserResponse])  # TODO: remove this endpoint
+async def get_users(db: SessionDep, current_user: User = Depends(get_current_user)):
     """
-    Get all users (debug endpoint).
+    Get all users. For users with admin role only.
     """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You can't use this endpoint"
+        )
     result = await db.execute(select(User))
     users = result.scalars().all()
     return users
