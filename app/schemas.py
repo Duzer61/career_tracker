@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.db.models import ApplicationStatus
 
@@ -12,6 +12,28 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
+    password: str
+
+    @field_validator("password")
+    def validate_password(cls, v):
+        message = ""
+        if len(v) < 8:
+            message += "Пароль должен содержать минимум 8 символов. "
+        if not any(char.islower() for char in v):
+            message += "Пароль должен содержать хотя бы одну строчную букву. "
+        if not any(char.isupper() for char in v):
+            message += "Пароль должен содержать хотя бы одну заглавную букву. "
+        if not any(char.isdigit() for char in v):
+            message += "Пароль должен содержать хотя бы одну цифру. "
+        if not v.isascii():
+            message += "Пароль должен содержать только латинские буквы. "
+        if message:
+            message = message.strip()
+            raise ValueError(message)
+        return v
+
+
+class UserLogin(UserBase):
     password: str
 
 

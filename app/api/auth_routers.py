@@ -12,7 +12,7 @@ from app.auth import (
 from app.crud import create_user
 from app.db.database import SessionDep
 from app.db.models import User
-from app.schemas import UserCreate, UserResponse
+from app.schemas import UserCreate, UserLogin, UserResponse
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
@@ -33,7 +33,7 @@ async def register(user_data: UserCreate, db: SessionDep):
 
 
 @router.post("/login")
-async def login(response: Response, user_data: UserCreate, db: SessionDep):
+async def login(response: Response, user_data: UserLogin, db: SessionDep):
     """
     Authenticate user and return access and refresh tokens.
     """

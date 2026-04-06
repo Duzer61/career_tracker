@@ -90,6 +90,8 @@ let authContainer, appContainer, loginForm, registerForm, authMessage;
 let usernameDisplay, logoutBtn, addApplicationBtn, kanbanBoard;
 let applicationModal, applicationForm, modalTitle, closeModal, cancelBtn;
 let logoutModal, confirmLogoutBtn, cancelLogoutBtn;
+let deleteModal, confirmDeleteBtn, cancelDeleteBtn;
+let currentDeleteApplicationId = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -113,6 +115,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     logoutModal = document.getElementById('logout-modal');
     confirmLogoutBtn = document.getElementById('confirm-logout-btn');
     cancelLogoutBtn = document.getElementById('cancel-logout-btn');
+    deleteModal = document.getElementById('delete-modal');
+    confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    cancelDeleteBtn = document.getElementById('cancel-delete-btn');
     
     console.log('Elements initialized:', {
         authContainer: !!authContainer,
@@ -169,6 +174,23 @@ function setupEventListeners() {
     if (logoutModal) {
         logoutModal.addEventListener('click', (e) => {
             if (e.target === logoutModal) closeLogoutModal();
+        });
+    }
+
+    // Delete modal
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
+    }
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+    }
+    const deleteCloseModal = deleteModal?.querySelector('.close-modal');
+    if (deleteCloseModal) {
+        deleteCloseModal.addEventListener('click', closeDeleteModal);
+    }
+    if (deleteModal) {
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) closeDeleteModal();
         });
     }
 
@@ -278,7 +300,36 @@ async function handleRegister(e) {
         } else {
             const data = await response.json();
             console.log('Register error:', data);
-            authMessage.textContent = data.detail || 'Ошибка регистрации';
+            
+            // Handle validation errors (422 status)
+            if (response.status === 422 && data.detail) {
+                let errorMessages = '';
+                if (Array.isArray(data.detail)) {
+                    // Extract all validation error messages, remove "Value error, " prefix and add "Ошибка: " prefix
+                    errorMessages = 'Ошибка: ' + data.detail
+                        .map(err => {
+                            let msg = err.msg || '';
+                            // Remove "Value error, " prefix if present
+                            if (msg.startsWith('Value error, ')) {
+                                msg = msg.slice(12);
+                            }
+                            return msg;
+                        })
+                        .join(' ');
+                } else if (typeof data.detail === 'string') {
+                    // Handle case where detail is a string
+                    let msg = data.detail;
+                    if (msg.startsWith('Value error, ')) {
+                        msg = msg.slice(12);
+                    }
+                    errorMessages = 'Ошибка: ' + msg;
+                } else {
+                    errorMessages = data.detail || 'Ошибка регистрации';
+                }
+                authMessage.textContent = errorMessages;
+            } else {
+                authMessage.textContent = data.detail || 'Ошибка регистрации';
+            }
             authMessage.style.color = '#e74c3c';
         }
     } catch (error) {
@@ -362,9 +413,13 @@ async function handleApplicationSubmit(e) {
         company_name: document.getElementById('company-name').value,
         vacancy_url: document.getElementById('vacancy-url').value || null,
         contacts: document.getElementById('contacts').value || null,
-        comments: document.getElementById('comments').value || null,
-        status: document.getElementById('status').value
+        comments: document.getElementById('comments').value || null
     };
+
+    // Only include status when editing
+    if (editingApplicationId) {
+        applicationData.status = document.getElementById('status').value;
+    }
 
     try {
         let response;
@@ -394,9 +449,28 @@ async function handleApplicationSubmit(e) {
     }
 }
 
-async function deleteApplication(applicationId) {
-    if (!confirm('Удалить заявку?')) return;
+function showDeleteModal(applicationId) {
+    currentDeleteApplicationId = applicationId;
+    if (deleteModal) {
+        deleteModal.classList.remove('hidden');
+    }
+}
 
+function closeDeleteModal(resetId = true) {
+    if (deleteModal) {
+        deleteModal.classList.add('hidden');
+    }
+    if (resetId) {
+        currentDeleteApplicationId = null;
+    }
+}
+
+async function handleConfirmDelete() {
+    if (!currentDeleteApplicationId) return;
+    
+    const applicationId = currentDeleteApplicationId;
+    closeDeleteModal(false); // Close modal without resetting ID
+    
     try {
         const response = await authenticatedFetch(`${API_BASE}/applications/${applicationId}`, {
             method: 'DELETE'
@@ -405,11 +479,22 @@ async function deleteApplication(applicationId) {
         if (response.ok) {
             await loadApplications();
         } else {
-            alert('Ошибка удаления заявки');
+            const data = await response.json();
+            const errorMessage = typeof data.detail === 'string'
+                ? data.detail
+                : (data.detail?.message || data.detail || 'Ошибка удаления заявки');
+            alert(errorMessage);
         }
     } catch (error) {
         alert('Ошибка подключения');
     }
+    
+    currentDeleteApplicationId = null;
+}
+
+// Update deleteApplication to use custom modal
+async function deleteApplication(applicationId) {
+    showDeleteModal(applicationId);
 }
 
 async function updateApplicationStatus(applicationId, newStatus) {
@@ -511,6 +596,7 @@ function createCard(app) {
 // Modal
 function openApplicationModal(application = null) {
     editingApplicationId = application ? application.id : null;
+    const statusFormGroup = document.getElementById('status').closest('.form-group');
 
     if (application) {
         modalTitle.textContent = 'Редактировать заявку';
@@ -519,9 +605,11 @@ function openApplicationModal(application = null) {
         document.getElementById('contacts').value = application.contacts || '';
         document.getElementById('comments').value = application.comments || '';
         document.getElementById('status').value = application.status;
+        statusFormGroup.classList.remove('hidden');
     } else {
         modalTitle.textContent = 'Новая заявка';
         applicationForm.reset();
+        statusFormGroup.classList.add('hidden');
     }
 
     applicationModal.classList.remove('hidden');
