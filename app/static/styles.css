@@ -361,6 +361,12 @@ header h1 {
     color: #667eea;
 }
 
+/* Increased spacing for confirmation modal headings */
+#logout-modal .modal-content h2,
+#delete-modal .modal-content h2 {
+    margin-bottom: 25px;
+}
+
 .form-group {
     margin-bottom: 15px;
 }
