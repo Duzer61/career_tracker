@@ -32,10 +32,10 @@ class ApplicationStatus(str, enum.Enum):
     CREATED = "created"
     HR_INTERVIEW = "hr_interview"
     TECH_INTERVIEW = "tech_interview"
-    DIRECTOR_INTERVIEW = "director_interview"
     OFFER = "offer"
+    AUTO_REJECT = "auto_reject"
     REJECTED = "rejected"
-    ARCHIVED = "archived"
+    IGNORED = "ignored"
 
 
 class Application(Base):

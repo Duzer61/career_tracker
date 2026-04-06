@@ -3,13 +3,13 @@ const API_BASE = '/api';
 
 // Application statuses mapping
 const STATUS_LABELS = {
-    created: 'Создана',
+    created: 'Отклик',
     hr_interview: 'HR собеседование',
     tech_interview: 'Техническое собеседование',
-    director_interview: 'Собеседование с директором',
     offer: 'Оффер',
+    auto_reject: 'Автоотказ',
     rejected: 'Отказ',
-    archived: 'Архив'
+    ignored: 'Игнор'
 };
 
 // State
