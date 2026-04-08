@@ -1,3 +1,4 @@
+import httpx
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from app.auth import (
@@ -9,6 +10,7 @@ from app.auth import (
     refresh_tokens,
     set_cookie,
 )
+from app.config import config
 from app.crud import create_user
 from app.db.database import SessionDep
 from app.db.models import User
@@ -18,10 +20,38 @@ router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, db: SessionDep):
+async def register(user_data: UserCreate, db: SessionDep, request: Request):
     """
     Register a new user.
     """
+    # Verify Turnstile token
+    turnstile_token = user_data.turnstile_token
+
+    if not turnstile_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="CAPTCHA verification required",
+        )
+
+    # Verify with Cloudflare
+    async with httpx.AsyncClient() as client:
+        verify_response = await client.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data={
+                "secret": config.TURNSTILE_SECRET_KEY,
+                "response": turnstile_token,
+                "remoteip": request.client.host if request.client else None,
+            },
+        )
+
+    result = verify_response.json()
+
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="CAPTCHA verification failed",
+        )
+
     db_user = await get_user_by_login(db, user_data.login)
     if db_user:
         raise HTTPException(

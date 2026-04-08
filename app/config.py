@@ -22,6 +22,8 @@ class Config:
     ACCESS_TOKEN_EXP_MINUTES: int
     REFRESH_TOKEN_EXP_DAYS: int
     ENVIRON: str
+    TURNSTILE_SITE_KEY: str = ""
+    TURNSTILE_SECRET_KEY: str = ""
     DEFAULT_TOKEN_LIFETIME: int = 30  # minutes
 
 
@@ -43,6 +45,8 @@ def load_config() -> Config:
         ACCESS_TOKEN_EXP_MINUTES=int(env("ACCESS_TOKEN_EXP_MINUTES")),
         REFRESH_TOKEN_EXP_DAYS=int(env("REFRESH_TOKEN_EXP_DAYS")),
         ENVIRON=env("ENVIRON"),
+        TURNSTILE_SITE_KEY=env("TURNSTILE_SITE_KEY", default=""),
+        TURNSTILE_SECRET_KEY=env("TURNSTILE_SECRET_KEY", default=""),
     )
 
 

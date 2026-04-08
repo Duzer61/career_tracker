@@ -12,6 +12,7 @@ dependencies = [
     "environs>=14.6.0",
     "fastapi[all]>=0.135.1",
     "flake8>=7.3.0",
+    "httpx>=0.28.1",
     "isort>=8.0.1",
     "passlib==1.7.4",
     "pre-commit>=4.5.1",

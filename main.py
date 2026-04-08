@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 from app.api.applications_routers import router as board_router
 from app.api.auth_routers import router as auth_router
 from app.api.user_routes import router as user_router
+from app.config import config
 from app.db.redis import redis_client
 
 
@@ -30,7 +31,9 @@ templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "turnstile_site_key": config.TURNSTILE_SITE_KEY}
+    )
 
 
 app.include_router(auth_router)

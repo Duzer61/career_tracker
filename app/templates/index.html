@@ -6,6 +6,7 @@
     <title>Career Tracker - Карьерный монитор</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
     <div id="auth-container" class="hidden">
@@ -25,6 +26,7 @@
             <form id="register-form" class="tab-content">
                 <input type="text" id="register-login" placeholder="Логин" required>
                 <input type="password" id="register-password" placeholder="Пароль" required>
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="light"></div>
                 <button type="submit" class="btn-primary">Зарегистрироваться</button>
             </form>
 

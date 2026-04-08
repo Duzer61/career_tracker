@@ -280,13 +280,18 @@ async function handleRegister(e) {
     e.preventDefault();
     const login = document.getElementById('register-login').value;
     const password = document.getElementById('register-password').value;
-    console.log('Register attempt:', { login, password: '***' });
+    
+    // Get Turnstile token
+    const turnstileToken = document.querySelector('#register-form [name="cf-turnstile-response"]');
+    const token = turnstileToken ? turnstileToken.value : null;
+    
+    console.log('Register attempt:', { login, password: '***', turnstileToken: token ? 'present' : 'missing' });
 
     try {
         const response = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ login, password }),
+            body: JSON.stringify({ login, password, turnstile_token: token }),
             credentials: 'include'
         });
 

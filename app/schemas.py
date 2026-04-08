@@ -13,6 +13,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    turnstile_token: str = None
 
     @field_validator("password")
     def validate_password(cls, v):
