@@ -50,7 +50,6 @@ if __name__ == "__main__":
     # Получаем хост и порт из переменных окружения или используем значения по умолчанию
     host = os.getenv("HOST", "0.0.0.0")  # Важно: в Docker нужно слушать 0.0.0.0
     port = int(os.getenv("PORT", "8000"))
-    reload = os.getenv("ENVIRON", "dev") == "dev"
+    is_dev = os.getenv("ENVIRON", "dev") == "dev"
 
-    self_filename = os.path.splitext(os.path.basename(__file__))[0]
-    uvicorn.run(f"{self_filename}:app", host=host, port=port, reload=reload)
+    uvicorn.run("main:app", host=host, port=port, reload=is_dev)
