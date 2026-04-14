@@ -30,7 +30,9 @@ templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        name="index.html", context={"request": request}, request=request
+    )
 
 
 app.include_router(auth_router)
@@ -39,5 +41,10 @@ app.include_router(board_router)
 
 
 if __name__ == "__main__":
+    # Получаем хост и порт из переменных окружения или используем значения по умолчанию
+    host = os.getenv("HOST", "0.0.0.0")  # Важно: в Docker нужно слушать 0.0.0.0
+    port = int(os.getenv("PORT", "8000"))
+    reload = os.getenv("ENVIRON", "dev") == "dev"
+
     self_filename = os.path.splitext(os.path.basename(__file__))[0]
-    uvicorn.run(f"{self_filename}:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run(f"{self_filename}:app", host=host, port=port, reload=reload)
