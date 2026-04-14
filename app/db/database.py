@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -10,6 +11,17 @@ DB_URL = cf.db.db_url
 
 engine = create_async_engine(DB_URL)
 AsyncLocalSession = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+
+async def check_db_connection():
+    """Однократная проверка подключения к PostgreSQL при старте."""
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        print("✅ Подключено к PostgreSQL")
+    except Exception as e:
+        print(f"❌ Ошибка подключения к PostgreSQL: {e}")
+        raise  # Прерываем запуск приложения, если БД недоступна
 
 
 async def get_session():

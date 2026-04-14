@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 from app.api.applications_routers import router as board_router
 from app.api.auth_routers import router as auth_router
 from app.api.user_routes import router as user_router
+from app.db.database import check_db_connection, engine
 from app.db.redis import redis_client
 
 
@@ -17,9 +18,14 @@ from app.db.redis import redis_client
 async def lifespan(app: FastAPI):
     # Connect to Redis
     await redis_client.connect()
+    # Check PostgreSQL connection
+    await check_db_connection()
     yield
     # Close Redis connection
     await redis_client.close()
+    # Close PostgreSQL connection
+    await engine.dispose()
+    print("🔌 Соединение с PostgreSQL закрыто")
 
 
 app = FastAPI(lifespan=lifespan, title="Career tracker")
