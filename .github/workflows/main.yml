@@ -70,4 +70,5 @@ jobs:
           sudo docker compose -f docker-compose-career-production.yml pull
           sudo docker compose -f docker-compose-career-production.yml down
           sudo docker compose -f docker-compose-career-production.yml up -d
+          sleep 10
           sudo docker compose -f docker-compose-career-production.yml exec alembic upgrade head
