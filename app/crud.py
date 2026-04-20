@@ -14,6 +14,8 @@ async def create_user(db: AsyncSession, user_data: UserCreate) -> User:
     """
     Create a new user.
     """
+    if user_data.login not in ["Duzer", "test_user1"]:  # TODO: remove this when ready
+        raise ValueError("The project is in test mode. You can't register right now.")
     hashed_password = get_password_hash(user_data.password)
     user = User(login=user_data.login, hashed_password=hashed_password)
     db.add(user)
