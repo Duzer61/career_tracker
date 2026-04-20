@@ -70,15 +70,3 @@ jobs:
           sudo docker compose -f docker-compose-career-production.yml pull
           sudo docker compose -f docker-compose-career-production.yml down
           sudo docker compose -f docker-compose-career-production.yml up -d
-          sudo docker compose -f docker-compose-career-production.yml ps
-          echo "Waiting for career container to be ready..."
-          for i in {1..30}; do
-            if sudo docker compose -f docker-compose-career-production.yml ps | grep career | grep "Up"; then
-              echo "Career container is running!"
-              break
-            fi
-            echo "Waiting... attempt $i"
-            sleep 2
-          done
-
-          sudo docker compose -f docker-compose-career-production.yml exec career sh -c ". .venv/bin/activate && alembic upgrade head"
