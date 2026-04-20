@@ -19,5 +19,15 @@ RUN uv venv && \
 # Копирование всего приложения
 COPY . .
 
-# Команда для запуска приложения
-CMD ["sh", "-c", ". .venv/bin/activate && python main.py"]
+# Создание entrypoint скрипта с автоматическими миграциями
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Activating virtual environment..."\n\
+. .venv/bin/activate\n\
+echo "Running database migrations..."\n\
+alembic upgrade head\n\
+echo "Starting application..."\n\
+exec python main.py' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+# Используем entrypoint вместо cmd
+ENTRYPOINT ["/entrypoint.sh"]

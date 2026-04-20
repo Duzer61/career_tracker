@@ -57,7 +57,7 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         source: "docker-compose-career-production.yml"
-        target: "calculator"
+        target: "career_tracker"
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
       with:
