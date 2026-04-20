@@ -22,7 +22,7 @@ jobs:
       - name: Push to DockerHub
         uses: docker/build-push-action@v4
         with:
-          context: ./career_tracker/
+          context: .
           push: true
           tags: duzer61/career_tracker:latest
 
