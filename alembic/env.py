@@ -68,6 +68,20 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # В начале run_migrations_online()
+    import logging
+
+    logging.basicConfig()
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+
+    # Добавьте перед connectable = engine_from_config(...):
+    from sqlalchemy import create_engine
+
+    # Просто создаем движок для логирования (не для миграции), чтобы увидеть, что получилось
+    temp_engine = create_engine(
+        config.get_section(config.config_ini_section, {}).get("sqlalchemy.url", "")
+    )
+    print(f"DEBUG ALEMBIC URL: {temp_engine.url}")
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
