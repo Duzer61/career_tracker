@@ -17,8 +17,6 @@ services:
     image: redis:7-alpine
     container_name: career-tracker-redis
     env_file: .env
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --requirepass ${REDIS_PASSWORD:-} --appendonly yes
