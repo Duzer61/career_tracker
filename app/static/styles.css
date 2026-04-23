@@ -417,20 +417,68 @@ header h1 {
     border-radius: 8px;
 }
 
+/* Touch ghost for mobile drag-and-drop */
+.touch-ghost {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.9;
+    transform: rotate(3deg) scale(1.02);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-left: 4px solid #667eea;
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    cursor: grabbing;
+    will-change: left, top;
+}
+
+/* Prevent text selection during touch drag */
+.card.dragging {
+    opacity: 0.4;
+    transform: scale(0.98);
+}
+
+/* Disable native touch callout on cards */
+.card {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .kanban-board {
         padding: 10px;
+        gap: 12px;
     }
 
     .column {
-        flex: 0 0 250px;
-        min-height: 400px;
+        flex: 0 0 260px;
+        min-height: 300px;
+        padding: 10px;
     }
 
     header {
         padding: 15px 20px;
         flex-direction: column;
         gap: 10px;
+    }
+
+    .card {
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+
+    .card-company {
+        font-size: 15px;
+    }
+
+    .card-field {
+        font-size: 13px;
+    }
+
+    .controls {
+        padding: 15px 20px;
     }
 }
