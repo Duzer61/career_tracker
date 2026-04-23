@@ -228,6 +228,7 @@ header h1 {
     cursor: move;
     transition: transform 0.2s, box-shadow 0.2s;
     border-left: 4px solid #667eea;
+    will-change: transform;
 }
 
 .card:hover {

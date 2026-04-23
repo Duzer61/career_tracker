@@ -219,7 +219,22 @@ function setupEventListeners() {
 
     // Drag and drop
     setupDragAndDrop();
-    
+
+    // Делегирование кликов по карточкам
+    kanbanBoard.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.card-btn.edit');
+        const deleteBtn = e.target.closest('.card-btn.delete');
+
+        if (editBtn) {
+            const card = editBtn.closest('.card');
+            const app = applications.find(a => a.id === parseInt(card.dataset.applicationId));
+            openApplicationModal(app);
+        } else if (deleteBtn) {
+            const card = deleteBtn.closest('.card');
+            deleteApplication(parseInt(card.dataset.applicationId));
+        }
+    });
+
     console.log('Event listeners setup complete');
 }
 
@@ -498,23 +513,12 @@ async function deleteApplication(applicationId) {
 }
 
 async function updateApplicationStatus(applicationId, newStatus) {
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/applications/${applicationId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus })
-        });
-
-        if (response.ok) {
-            await loadApplications();
-        } else {
-            alert('Ошибка обновления статуса');
-            await loadApplications(); // Reload to restore original state
-        }
-    } catch (error) {
-        alert('Ошибка подключения');
-        await loadApplications();
-    }
+    // Оставляем только fetch. Возвращаем response, чтобы drop-обработчик мог обработать ошибку.
+    return await authenticatedFetch(`${API_BASE}/applications/${applicationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+    });
 }
 
 // Kanban Board
@@ -582,13 +586,7 @@ function createCard(app) {
     `;
 
     // Event listeners
-    card.querySelector('.edit').addEventListener('click', () => {
-        openApplicationModal(app);
-    });
 
-    card.querySelector('.delete').addEventListener('click', () => {
-        deleteApplication(app.id);
-    });
 
     return card;
 }
@@ -648,10 +646,11 @@ function setupDragAndDrop() {
 
     document.addEventListener('dragover', (e) => {
         e.preventDefault();
+        e.dataTransfer.dropEffect = 'move'; // Стандартная практика для HTML5 DnD
         const container = e.target.closest('.cards-container');
-        if (!container || container === sourceContainer) return;
-
-        container.classList.add('drag-over');
+        if (container && container !== sourceContainer && !container.classList.contains('drag-over')) {
+            container.classList.add('drag-over');
+        }
     });
 
     document.addEventListener('dragleave', (e) => {
@@ -667,15 +666,38 @@ function setupDragAndDrop() {
         if (!container || !draggedCard) return;
 
         container.classList.remove('drag-over');
-
         const column = container.closest('.column');
         const newStatus = column.dataset.status;
         const applicationId = parseInt(draggedCard.dataset.applicationId);
 
-        // Find the current application to check if status changed
         const app = applications.find(a => a.id === applicationId);
-        if (app && app.status !== newStatus) {
-            await updateApplicationStatus(applicationId, newStatus);
+        if (!app || app.status === newStatus) return;
+
+        const oldContainer = draggedCard.parentElement;
+        const oldStatus = app.status;
+
+        // 1. Мгновенно перемещаем карточку в новый столбец (без задержки)
+        container.appendChild(draggedCard);
+
+        // 2. Обновляем локальное состояние и счётчики колонок
+        app.status = newStatus;
+        updateColumnCounts();
+
+        // 3. Отправляем запрос на сервер в фоне
+        try {
+            const response = await authenticatedFetch(`${API_BASE}/applications/${applicationId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (!response.ok) throw new Error('Server error');
+        } catch (error) {
+            // Откат при ошибке сети или сервера
+            oldContainer.appendChild(draggedCard);
+            app.status = oldStatus;
+            updateColumnCounts();
+            alert('Не удалось обновить статус заявки');
         }
     });
 }
@@ -693,6 +715,13 @@ function formatDate(dateString) {
     return date.toLocaleDateString('ru-RU');
 }
 
+function updateColumnCounts() {
+    document.querySelectorAll('.column').forEach(col => {
+        const status = col.dataset.status;
+        const count = applications.filter(app => app.status === status).length;
+        col.querySelector('.column-count').textContent = count;
+    });
+}
 // Expose for testing
 window.CareerTracker = {
     loadApplications,
