@@ -15,21 +15,19 @@ class UserCreate(UserBase):
     password: str
 
     @field_validator("password")
-    def validate_password(cls, v):
-        message = ""
-        if len(v) < 8:
-            message += "Пароль должен содержать минимум 8 символов. "
-        if not any(char.islower() for char in v):
-            message += "Пароль должен содержать хотя бы одну строчную букву. "
-        if not any(char.isupper() for char in v):
-            message += "Пароль должен содержать хотя бы одну заглавную букву. "
-        if not any(char.isdigit() for char in v):
-            message += "Пароль должен содержать хотя бы одну цифру. "
-        if not v.isascii():
-            message += "Пароль должен содержать только латинские буквы. "
-        if message:
-            message = message.strip()
-            raise ValueError(message)
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        rules = [
+            (len(v) >= 8, "Пароль должен содержать минимум 8 символов."),
+            (any(c.islower() for c in v), "Пароль должен содержать хотя бы одну строчную букву."),
+            (any(c.isupper() for c in v), "Пароль должен содержать хотя бы одну заглавную букву."),
+            (any(c.isdigit() for c in v), "Пароль должен содержать хотя бы одну цифру."),
+            (v.isascii(), "Пароль должен содержать только символы ASCII."),
+        ]
+
+        errors = [msg for is_valid, msg in rules if not is_valid]
+        if errors:
+            raise ValueError(" ".join(errors))
         return v
 
 
