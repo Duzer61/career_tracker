@@ -9,6 +9,7 @@ from app.auth import (
     refresh_tokens,
     set_cookie,
 )
+from app.config import config as cf
 from app.crud import create_user
 from app.db.database import SessionDep
 from app.db.models import User
@@ -23,7 +24,8 @@ async def register(user_data: UserCreate, db: SessionDep):
     """
     Register a new user.
     """
-    if user_data.login not in ["Duzer", "test_user1"]:  # TODO: remove this when ready
+
+    if cf.ONLY_ALLOWED_USERNAMES_MODE and user_data.login not in cf.ALLOWED_USERNAMES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The project is in test mode. You can't register right now.",

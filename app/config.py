@@ -22,14 +22,27 @@ class Config:
     ACCESS_TOKEN_EXP_MINUTES: int
     REFRESH_TOKEN_EXP_DAYS: int
     ENVIRON: str
+    ONLY_ALLOWED_USERNAMES_MODE: bool
+    ALLOWED_USERNAMES: list[str]
     DEFAULT_TOKEN_LIFETIME: int = 30  # minutes
     MAX_LOGIN_ATTEMPTS: int = 5  # max attempts in time window
     WINDOW_LOGIN_ATTEMPTS: int = 300  # seconds
 
 
+def get_bool(value: str | None) -> bool:
+    if value is None:
+        return False
+    return value.lower() in ("true", "1", "yes", "y", "on")
+
+
 def load_config() -> Config:
     env = Env()
     env.read_env()
+
+    # Load allowed usernames
+    allowed_usernames = [
+        name.strip() for name in env("ALLOWED_USERNAMES", "").split(",") if name.strip()
+    ]
 
     return Config(
         db=DatabaseConfig(
@@ -45,6 +58,8 @@ def load_config() -> Config:
         ACCESS_TOKEN_EXP_MINUTES=int(env("ACCESS_TOKEN_EXP_MINUTES")),
         REFRESH_TOKEN_EXP_DAYS=int(env("REFRESH_TOKEN_EXP_DAYS")),
         ENVIRON=env("ENVIRON"),
+        ONLY_ALLOWED_USERNAMES_MODE=get_bool(env("ONLY_ALLOWED_USERNAMES_MODE", "on")),
+        ALLOWED_USERNAMES=allowed_usernames,
     )
 
 
