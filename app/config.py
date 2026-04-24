@@ -23,6 +23,8 @@ class Config:
     REFRESH_TOKEN_EXP_DAYS: int
     ENVIRON: str
     DEFAULT_TOKEN_LIFETIME: int = 30  # minutes
+    MAX_LOGIN_ATTEMPTS: int = 5  # max attempts in time window
+    WINDOW_LOGIN_ATTEMPTS: int = 300  # seconds
 
 
 def load_config() -> Config:
