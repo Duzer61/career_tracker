@@ -14,7 +14,6 @@ from app.db.models import ApplicationStatus
 from app.schemas import ApplicationCreate, ApplicationUpdate, UserCreate
 
 
-@pytest.mark.asyncio
 class TestUserCRUD:
     """Tests for user CRUD operations."""
 
@@ -33,7 +32,6 @@ class TestUserCRUD:
             await create_user(test_session, user_data)
 
 
-@pytest.mark.asyncio
 class TestApplicationCRUD:
     """Tests for application CRUD operations."""
 

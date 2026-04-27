@@ -1,17 +1,8 @@
 """Integration tests for authentication API endpoints."""
 
-import pytest
+from tests.helpers import cookies_from_response
 
 
-def _cookies_from_response(response) -> dict:
-    """Extract cookies from a response into a simple dict."""
-    cookies = {}
-    for key, value in response.cookies.items():
-        cookies[key] = value
-    return cookies
-
-
-@pytest.mark.asyncio
 class TestRegister:
     """Tests for POST /api/auth/register."""
 
@@ -51,7 +42,6 @@ class TestRegister:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
 class TestLogin:
     """Tests for POST /api/auth/login."""
 
@@ -68,7 +58,7 @@ class TestLogin:
         response = await self._register_and_login(client)
         assert response.status_code == 200
         assert response.json() == {"message": "login successful"}
-        cookies = _cookies_from_response(response)
+        cookies = cookies_from_response(response)
         assert "access_token" in cookies
         assert "refresh_token" in cookies
 
@@ -88,7 +78,6 @@ class TestLogin:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
 class TestRefresh:
     """Tests for POST /api/auth/refresh."""
 
@@ -105,7 +94,7 @@ class TestRefresh:
     async def test_refresh_success(self, client):
         """Should refresh tokens and set new cookies."""
         login_resp = await self._login_and_get_cookies(client)
-        cookies = _cookies_from_response(login_resp)
+        cookies = cookies_from_response(login_resp)
 
         response = await client.post(
             self.REFRESH_URL,
@@ -113,7 +102,7 @@ class TestRefresh:
         )
         assert response.status_code == 200
         assert "Tokens refreshed" in response.json()["message"]
-        new_cookies = _cookies_from_response(response)
+        new_cookies = cookies_from_response(response)
         assert "access_token" in new_cookies
         assert "refresh_token" in new_cookies
 
@@ -123,7 +112,6 @@ class TestRefresh:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
 class TestLogout:
     """Tests for POST /api/auth/logout and logout-all."""
 
@@ -140,7 +128,7 @@ class TestLogout:
         login_resp = await client.post(
             self.LOGIN_URL, json={"login": "logoutuser", "password": "StrongPass1"}
         )
-        cookies = _cookies_from_response(login_resp)
+        cookies = cookies_from_response(login_resp)
 
         response = await client.post(self.LOGOUT_URL, cookies=cookies)
         assert response.status_code == 200
@@ -154,7 +142,7 @@ class TestLogout:
         login_resp = await client.post(
             self.LOGIN_URL, json={"login": "logoutalluser", "password": "StrongPass1"}
         )
-        cookies = _cookies_from_response(login_resp)
+        cookies = cookies_from_response(login_resp)
 
         response = await client.post(self.LOGOUT_ALL_URL, cookies=cookies)
         assert response.status_code == 200

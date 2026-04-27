@@ -1,19 +1,13 @@
 """Pytest fixtures and configuration for Career Tracker tests."""
 
-import asyncio
 from typing import AsyncGenerator
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.config import Config, DatabaseConfig, RedisConfig
-
-# ──────────────────────────────────────────────
-# Override config BEFORE any app imports
-# ──────────────────────────────────────────────
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -32,14 +26,21 @@ def get_test_config() -> Config:
     )
 
 
+# ──────────────────────────────────────────────
+# Override config BEFORE any app imports
+# ──────────────────────────────────────────────
+# app/db/database.py creates engine at import time using cf.db.db_url,
+# so we must set the test config before it is imported.
 import app.config  # noqa: E402
 
 app.config.config = get_test_config()
-config = app.config.config
 
 # ──────────────────────────────────────────────
 # In-memory Redis mock
 # ──────────────────────────────────────────────
+# We replace the RedisClient class and the module-level singleton
+# before main.py (or any router) imports them.
+import app.db.redis  # noqa: E402
 
 
 class InMemoryRedisMock:
@@ -91,38 +92,43 @@ class InMemoryRedisMock:
         return value in self._sets.get(key, set())
 
 
-from app.db.redis import RedisClient  # noqa: E402
+class TestRedisClient:
+    """Drop-in replacement for RedisClient that uses InMemoryRedisMock."""
 
-_mock_redis = InMemoryRedisMock()
+    def __init__(self, url: str):
+        self.url = url
+        self._mock = InMemoryRedisMock()
+
+    async def connect(self) -> None:
+        pass
+
+    async def close(self) -> None:
+        pass
+
+    async def get_client(self):
+        return self._mock
 
 
-async def mock_get_client(self):
-    return _mock_redis
-
-
-async def mock_connect():
-    pass
-
-
-async def mock_close():
-    pass
-
-
-RedisClient.connect = mock_connect
-RedisClient.close = mock_close
-RedisClient.get_client = mock_get_client
+# Replace the class and the module-level singleton so that every
+# downstream import receives the test implementation.
+app.db.redis.RedisClient = TestRedisClient
+app.db.redis.redis_client = TestRedisClient(app.config.config.redis.redis_url)
 
 # Now safe to import the FastAPI app
 from main import app as fastapi_app  # noqa: E402
+
+# Keep a reference to the mock for the reset fixture.
+_test_redis_mock = app.db.redis.redis_client._mock
 
 # ──────────────────────────────────────────────
 # Override DB session dependency
 # ──────────────────────────────────────────────
 
+from app.db.database import get_session  # noqa: E402
+from app.db.models import Base, User  # noqa: E402
+
 test_engine = create_async_engine(TEST_DB_URL, echo=False)
-TestSessionLocal = sessionmaker(  # type: ignore
-    test_engine, class_=AsyncSession, expire_on_commit=False
-)
+TestSessionLocal = sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -138,13 +144,9 @@ async def setup_database():
 @pytest_asyncio.fixture(autouse=True)
 async def reset_redis():
     """Clear in-memory Redis mock between tests."""
-    _mock_redis._data.clear()
-    _mock_redis._sets.clear()
+    _test_redis_mock._data.clear()
+    _test_redis_mock._sets.clear()
     yield
-
-
-from app.db.database import get_session  # noqa: E402
-from app.db.models import Base, User  # noqa: E402
 
 
 async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
@@ -153,18 +155,6 @@ async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 fastapi_app.dependency_overrides[get_session] = override_get_session
-
-# ──────────────────────────────────────────────
-# Event loop (session-scoped)
-# ──────────────────────────────────────────────
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
 
 # ──────────────────────────────────────────────
 # Test fixtures

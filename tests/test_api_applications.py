@@ -1,17 +1,8 @@
 """Integration tests for Applications API endpoints."""
 
-import pytest
+from tests.helpers import cookies_from_response
 
 
-def _cookies_from_response(response) -> dict:
-    """Extract cookies from a response into a simple dict."""
-    cookies = {}
-    for key, value in response.cookies.items():
-        cookies[key] = value
-    return cookies
-
-
-@pytest.mark.asyncio
 class TestApplicationsAPI:
     """Tests for CRUD operations on /api/applications."""
 
@@ -29,7 +20,7 @@ class TestApplicationsAPI:
             self.LOGIN_URL,
             json={"login": "apptestuser", "password": "StrongPass1"},
         )
-        return _cookies_from_response(login_resp)
+        return cookies_from_response(login_resp)
 
     async def _create_app(self, client, cookies, company_name="Test Corp", **kwargs):
         """Helper to create an application."""
