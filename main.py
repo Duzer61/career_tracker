@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 from app.api.applications_routers import router as board_router
 from app.api.auth_routers import router as auth_router
 from app.api.user_routes import router as user_router
+from app.config import config as cf
 from app.db.database import check_db_connection, engine
 from app.db.redis import redis_client
 
@@ -28,7 +29,13 @@ async def lifespan(app: FastAPI):
     print("🔌 Соединение с PostgreSQL закрыто")
 
 
-app = FastAPI(lifespan=lifespan, title="Career tracker")
+app = FastAPI(
+    lifespan=lifespan,
+    title="Career tracker",
+    docs_url=None if cf.IS_PROD else "/docs",
+    redoc_url=None if cf.IS_PROD else "/redoc",
+    openapi_url=None if cf.IS_PROD else "/openapi.json",
+)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")

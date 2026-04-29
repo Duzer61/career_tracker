@@ -24,6 +24,7 @@ class Config:
     ENVIRON: str
     ONLY_ALLOWED_USERNAMES_MODE: bool
     ALLOWED_USERNAMES: list[str]
+    IS_PROD: bool
     DEFAULT_TOKEN_LIFETIME: int = 30  # minutes
     MAX_LOGIN_ATTEMPTS: int = 5  # max attempts in time window
     WINDOW_LOGIN_ATTEMPTS: int = 300  # seconds
@@ -60,6 +61,7 @@ def load_config() -> Config:
         ENVIRON=env("ENVIRON"),
         ONLY_ALLOWED_USERNAMES_MODE=get_bool(env("ONLY_ALLOWED_USERNAMES_MODE", "on")),
         ALLOWED_USERNAMES=allowed_usernames,
+        IS_PROD=env("ENVIRON") == "prod",
     )
 
 
