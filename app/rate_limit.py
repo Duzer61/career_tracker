@@ -21,14 +21,10 @@ async def _check_rate_limit(key: str, max_attempts: int, window_seconds: int):
         )
 
 
-async def rate_limit_login(
-    request: Request,
-    max_attempts: int = cf.MAX_LOGIN_ATTEMPTS,
-    window_seconds: int = cf.WINDOW_LOGIN_ATTEMPTS,
-):
+async def rate_limit_login(request: Request):
     """
     Rate-limit login by client IP. Max attempts in time window.
     """
     client_ip = request.client.host if request.client else "unknown"
     key = f"rate_limit:login:ip:{client_ip}"
-    await _check_rate_limit(key, max_attempts, window_seconds)
+    await _check_rate_limit(key, cf.MAX_LOGIN_ATTEMPTS, cf.WINDOW_LOGIN_ATTEMPTS)

@@ -16,11 +16,13 @@ router = APIRouter(prefix="/api/applications", tags=["applications"])
 
 
 @router.get("", response_model=list[ApplicationResponse])
-async def get_applications_endpoint(db: SessionDep, current_user: User = Depends(get_current_user)):
+async def get_applications_endpoint(
+    db: SessionDep, reverse: bool = False, current_user: User = Depends(get_current_user)
+):
     """
     Get all applications for current user.
     """
-    applications = await get_applications(db, current_user)
+    applications = await get_applications(db, reverse, current_user)
     return applications
 
 
