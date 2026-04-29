@@ -1,6 +1,6 @@
 """Integration tests for authentication API endpoints."""
 
-from tests.helpers import cookies_from_response
+from tests.helpers import set_client_cookies
 
 
 class TestRegister:
@@ -58,7 +58,8 @@ class TestLogin:
         response = await self._register_and_login(client)
         assert response.status_code == 200
         assert response.json() == {"message": "login successful"}
-        cookies = cookies_from_response(response)
+        set_client_cookies(client, response)
+        cookies = dict(response.cookies)
         assert "access_token" in cookies
         assert "refresh_token" in cookies
 
@@ -94,17 +95,18 @@ class TestRefresh:
     async def test_refresh_success(self, client):
         """Should refresh tokens and set new cookies."""
         login_resp = await self._login_and_get_cookies(client)
-        cookies = cookies_from_response(login_resp)
+        set_client_cookies(client, login_resp)
+        login_cookies = dict(login_resp.cookies)
 
         response = await client.post(
             self.REFRESH_URL,
-            headers={"Cookie": f"refresh_token={cookies['refresh_token']}"},
+            headers={"Cookie": f"refresh_token={login_cookies['refresh_token']}"},
         )
         assert response.status_code == 200
         assert "Tokens refreshed" in response.json()["message"]
-        new_cookies = cookies_from_response(response)
-        assert "access_token" in new_cookies
-        assert "refresh_token" in new_cookies
+        refresh_cookies = dict(response.cookies)
+        assert "access_token" in refresh_cookies
+        assert "refresh_token" in refresh_cookies
 
     async def test_refresh_no_token(self, client):
         """Should return 401 when no refresh token cookie is sent."""
@@ -128,9 +130,9 @@ class TestLogout:
         login_resp = await client.post(
             self.LOGIN_URL, json={"login": "logoutuser", "password": "StrongPass1"}
         )
-        cookies = cookies_from_response(login_resp)
+        set_client_cookies(client, login_resp)
 
-        response = await client.post(self.LOGOUT_URL, cookies=cookies)
+        response = await client.post(self.LOGOUT_URL)
         assert response.status_code == 200
         assert response.json() == {"message": "logout successful"}
 
@@ -142,8 +144,8 @@ class TestLogout:
         login_resp = await client.post(
             self.LOGIN_URL, json={"login": "logoutalluser", "password": "StrongPass1"}
         )
-        cookies = cookies_from_response(login_resp)
+        set_client_cookies(client, login_resp)
 
-        response = await client.post(self.LOGOUT_ALL_URL, cookies=cookies)
+        response = await client.post(self.LOGOUT_ALL_URL)
         assert response.status_code == 200
         assert response.json() == {"message": "Logged out from all devices"}
