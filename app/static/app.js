@@ -16,7 +16,9 @@ const STATUS_LABELS = {
 let currentUser = null;
 let applications = [];
 let editingApplicationId = null;
-let sortAscending = false; // false = сначала новые (desc), true = сначала старые (asc)
+// Чтение сохранённого состояния сортировки из sessionStorage (живёт до закрытия вкладки)
+const savedSort = sessionStorage.getItem('sortAscending');
+let sortAscending = savedSort !== null ? savedSort === 'true' : false; // false = сначала новые (desc), true = сначала старые (asc)
 
 // Refresh token tracking
 let refreshInProgress = false;
@@ -394,11 +396,20 @@ function showAuth() {
     appContainer.classList.add('hidden');
 }
 
+function updateSortButton() {
+    const sortBtn = document.getElementById('sort-btn');
+    if (sortBtn) {
+        sortBtn.dataset.ascending = sortAscending;
+        sortBtn.textContent = sortAscending ? '⬇ Сначала старые' : '⬆ Сначала новые';
+    }
+}
+
 function showApp() {
     console.log('Showing app screen');
     authContainer.classList.add('hidden');
     appContainer.classList.remove('hidden');
     usernameDisplay.textContent = currentUser.login;
+    updateSortButton();
     loadApplications();
 }
 
@@ -430,6 +441,7 @@ async function loadApplications() {
 
 function toggleSort() {
     sortAscending = !sortAscending;
+    sessionStorage.setItem('sortAscending', sortAscending);
     const sortBtn = document.getElementById('sort-btn');
     if (sortBtn) {
         sortBtn.dataset.ascending = sortAscending;
