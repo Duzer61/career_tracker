@@ -163,11 +163,19 @@ header h1 {
 .controls {
     padding: 20px 40px;
     background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
 #add-application-btn {
     width: auto;
     padding: 12px 24px;
+}
+
+#sort-btn {
+    width: auto;
+    color: #667eea;
 }
 
 /* Kanban Board */

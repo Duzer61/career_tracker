@@ -16,6 +16,7 @@ const STATUS_LABELS = {
 let currentUser = null;
 let applications = [];
 let editingApplicationId = null;
+let sortAscending = false; // false = сначала новые (desc), true = сначала старые (asc)
 
 // Refresh token tracking
 let refreshInProgress = false;
@@ -138,6 +139,12 @@ function setupEventListeners() {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
+
+    // Sort button
+    const sortBtn = document.getElementById('sort-btn');
+    if (sortBtn) {
+        sortBtn.addEventListener('click', toggleSort);
+    }
 
     // Auth forms
     console.log('Adding submit listeners to forms');
@@ -410,7 +417,7 @@ function switchTab(tab) {
 async function loadApplications() {
     try {
         console.log('Loading applications...');
-        const response = await authenticatedFetch(`${API_BASE}/applications`);
+        const response = await authenticatedFetch(`${API_BASE}/applications?reverse=${sortAscending}`);
         if (!response.ok) throw new Error('Failed to load applications');
         applications = await response.json();
         console.log('Applications loaded:', applications.length);
@@ -419,6 +426,16 @@ async function loadApplications() {
         console.error('Error loading applications:', error);
         alert('Ошибка загрузки заявок');
     }
+}
+
+function toggleSort() {
+    sortAscending = !sortAscending;
+    const sortBtn = document.getElementById('sort-btn');
+    if (sortBtn) {
+        sortBtn.dataset.ascending = sortAscending;
+        sortBtn.textContent = sortAscending ? '⬇ Сначала старые' : '⬆ Сначала новые';
+    }
+    loadApplications();
 }
 
 async function handleApplicationSubmit(e) {
