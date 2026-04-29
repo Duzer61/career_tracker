@@ -47,6 +47,29 @@ class TestApplicationsAPI:
         data = response.json()
         assert len(data) == 2
 
+    async def test_list_applications_reverse(self, client):
+        """Should respect reverse param: reverse=true → ASC, reverse=false → DESC."""
+        cookies = await self._setup_user(client)
+        await self._create_app(client, cookies, "Oldest")
+        await self._create_app(client, cookies, "Middle")
+        await self._create_app(client, cookies, "Newest")
+
+        # reverse=true → ASC (oldest first)
+        resp_asc = await client.get(self.APP_URL, params={"reverse": True}, cookies=cookies)
+        assert resp_asc.status_code == 200
+        asc_data = resp_asc.json()
+        assert len(asc_data) == 3
+        assert asc_data[0]["company_name"] == "Oldest"
+        assert asc_data[2]["company_name"] == "Newest"
+
+        # reverse=false → DESC (newest first)
+        resp_desc = await client.get(self.APP_URL, params={"reverse": False}, cookies=cookies)
+        assert resp_desc.status_code == 200
+        desc_data = resp_desc.json()
+        assert len(desc_data) == 3
+        assert desc_data[0]["company_name"] == "Newest"
+        assert desc_data[2]["company_name"] == "Oldest"
+
     # ── Create ────────────────────────────────
 
     async def test_create_application(self, client):

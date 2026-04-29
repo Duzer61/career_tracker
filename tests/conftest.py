@@ -23,6 +23,7 @@ def get_test_config() -> Config:
         ENVIRON="test",
         ONLY_ALLOWED_USERNAMES_MODE=False,
         ALLOWED_USERNAMES=[],
+        IS_PROD=False,
     )
 
 

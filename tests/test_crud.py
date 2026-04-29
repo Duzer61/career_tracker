@@ -37,7 +37,7 @@ class TestApplicationCRUD:
 
     async def test_get_applications_empty(self, test_session, test_user):
         """Should return empty list for new user."""
-        apps = await get_applications(test_session, test_user)
+        apps = await get_applications(test_session, False, test_user)
         assert apps == []
 
     async def test_create_application(self, test_session, test_user):
@@ -54,8 +54,32 @@ class TestApplicationCRUD:
         await create_application(ApplicationCreate(company_name="App 1"), test_session, test_user)
         await create_application(ApplicationCreate(company_name="App 2"), test_session, test_user)
 
-        apps = await get_applications(test_session, test_user)
+        apps = await get_applications(test_session, False, test_user)
         assert len(apps) == 2
+
+    async def test_get_applications_ordering(self, test_session, test_user):
+        """Should return applications ordered correctly based on reverse flag."""
+        import asyncio
+
+        app1 = await create_application(
+            ApplicationCreate(company_name="First"), test_session, test_user
+        )
+        await asyncio.sleep(0.01)
+        app2 = await create_application(
+            ApplicationCreate(company_name="Second"), test_session, test_user
+        )
+        await asyncio.sleep(0.01)
+        app3 = await create_application(
+            ApplicationCreate(company_name="Third"), test_session, test_user
+        )
+
+        # reverse=False (default) → DESC: newest first
+        apps_desc = await get_applications(test_session, False, test_user)
+        assert [a.id for a in apps_desc] == [app3.id, app2.id, app1.id]
+
+        # reverse=True → ASC: oldest first
+        apps_asc = await get_applications(test_session, True, test_user)
+        assert [a.id for a in apps_asc] == [app1.id, app2.id, app3.id]
 
     async def test_get_application_by_id(self, test_session, test_user):
         """Should return a specific application by ID."""
@@ -126,5 +150,5 @@ class TestApplicationCRUD:
         await test_session.commit()
         await test_session.refresh(other)
 
-        apps = await get_applications(test_session, other)
+        apps = await get_applications(test_session, False, other)
         assert apps == []
