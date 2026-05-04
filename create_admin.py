@@ -1,4 +1,5 @@
 import asyncio
+import getpass
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +25,23 @@ async def create_admin(db: AsyncSession, user_data: dict) -> User:
         raise ValueError(f"User with login '{user_data['login']}' already exists")
 
 
+async def input_password() -> str:
+    """
+    Input password from the console.
+    """
+    password = ""
+    while not password:
+        password1 = getpass.getpass("Enter the password: ")
+        if not password1:
+            continue
+        password2 = getpass.getpass("Re-enter the password: ")
+        if password1 == password2:
+            password = password1
+            break
+        print("Passwords do not match. Try again.")
+    return password
+
+
 async def main():
     """
     Create an administrator.
@@ -40,12 +58,7 @@ async def main():
             if login:
                 break
         print()
-
-        while True:
-            password = input("Enter the password: ")
-            if not password:
-                continue
-            break
+        password = await input_password()
         user_data = {"login": login, "password": password}
         admin = await create_admin(db, user_data)
         if admin:
