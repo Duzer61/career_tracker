@@ -180,15 +180,10 @@ function setupEventListeners() {
     if (cancelLogoutBtn) {
         cancelLogoutBtn.addEventListener('click', closeLogoutModal);
     }
-    // Close logout modal on clicking X or outside modal
+    // Close logout modal on clicking X
     const logoutCloseModal = logoutModal?.querySelector('.close-modal');
     if (logoutCloseModal) {
         logoutCloseModal.addEventListener('click', closeLogoutModal);
-    }
-    if (logoutModal) {
-        logoutModal.addEventListener('click', (e) => {
-            if (e.target === logoutModal) closeLogoutModal();
-        });
     }
 
     // Delete modal
@@ -202,11 +197,6 @@ function setupEventListeners() {
     if (deleteCloseModal) {
         deleteCloseModal.addEventListener('click', closeDeleteModal);
     }
-    if (deleteModal) {
-        deleteModal.addEventListener('click', (e) => {
-            if (e.target === deleteModal) closeDeleteModal();
-        });
-    }
 
     // Add application
     if (addApplicationBtn) {
@@ -219,11 +209,6 @@ function setupEventListeners() {
     }
     if (cancelBtn) {
         cancelBtn.addEventListener('click', closeApplicationModal);
-    }
-    if (applicationModal) {
-        applicationModal.addEventListener('click', (e) => {
-            if (e.target === applicationModal) closeApplicationModal();
-        });
     }
 
     // Application form
@@ -262,11 +247,21 @@ function setupEventListeners() {
     if (viewCloseModal) {
         viewCloseModal.addEventListener('click', closeViewModal);
     }
-    if (viewModal) {
-        viewModal.addEventListener('click', (e) => {
-            if (e.target === viewModal) closeViewModal();
-        });
-    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (!applicationModal.classList.contains('hidden')) {
+                closeApplicationModal();
+            } else if (!viewModal.classList.contains('hidden')) {
+                closeViewModal();
+            } else if (!logoutModal.classList.contains('hidden')) {
+                closeLogoutModal();
+            } else if (!deleteModal.classList.contains('hidden')) {
+                closeDeleteModal();
+            }
+        }
+    });
 
     console.log('Event listeners setup complete');
 }
