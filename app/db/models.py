@@ -46,6 +46,7 @@ class Application(Base):
         Enum(ApplicationStatus), nullable=False, default=ApplicationStatus.CREATED
     )
     company_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    vacancy_name: Mapped[str] = mapped_column(String(255), nullable=False, default="Not specified")
     contacts: Mapped[str] = mapped_column(String(500), nullable=True)
     comments: Mapped[str] = mapped_column(Text, nullable=True)
     vacancy_url: Mapped[str] = mapped_column(String(500), nullable=True)

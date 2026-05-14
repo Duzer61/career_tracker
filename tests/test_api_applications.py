@@ -22,9 +22,11 @@ class TestApplicationsAPI:
         )
         set_client_cookies(client, login_resp)
 
-    async def _create_app(self, client, company_name="Test Corp", **kwargs):
+    async def _create_app(
+        self, client, company_name="Test Corp", vacancy_name="Test Vacancy", **kwargs
+    ):
         """Helper to create an application."""
-        payload = {"company_name": company_name, **kwargs}
+        payload = {"company_name": company_name, "vacancy_name": vacancy_name, **kwargs}
         return await client.post(self.APP_URL, json=payload)
 
     # ── List ──────────────────────────────────

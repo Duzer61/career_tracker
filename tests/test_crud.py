@@ -42,17 +42,26 @@ class TestApplicationCRUD:
 
     async def test_create_application(self, test_session, test_user):
         """Should create an application and return it."""
-        app_data = ApplicationCreate(company_name="Test Corp")
+        app_data = ApplicationCreate(company_name="Test Corp", vacancy_name="Python Dev")
         app = await create_application(app_data, test_session, test_user)
         assert app.company_name == "Test Corp"
+        assert app.vacancy_name == "Python Dev"
         assert app.status == ApplicationStatus.CREATED
         assert app.user_id == test_user.id
         assert app.id is not None
 
     async def test_get_applications_returns_user_apps(self, test_session, test_user):
         """Should return only the user's applications."""
-        await create_application(ApplicationCreate(company_name="App 1"), test_session, test_user)
-        await create_application(ApplicationCreate(company_name="App 2"), test_session, test_user)
+        await create_application(
+            ApplicationCreate(company_name="App 1", vacancy_name="Vacancy 1"),
+            test_session,
+            test_user,
+        )
+        await create_application(
+            ApplicationCreate(company_name="App 2", vacancy_name="Vacancy 2"),
+            test_session,
+            test_user,
+        )
 
         apps = await get_applications(test_session, False, test_user)
         assert len(apps) == 2
@@ -62,15 +71,21 @@ class TestApplicationCRUD:
         import asyncio
 
         app1 = await create_application(
-            ApplicationCreate(company_name="First"), test_session, test_user
+            ApplicationCreate(company_name="First", vacancy_name="Vacancy 1"),
+            test_session,
+            test_user,
         )
         await asyncio.sleep(0.01)
         app2 = await create_application(
-            ApplicationCreate(company_name="Second"), test_session, test_user
+            ApplicationCreate(company_name="Second", vacancy_name="Vacancy 2"),
+            test_session,
+            test_user,
         )
         await asyncio.sleep(0.01)
         app3 = await create_application(
-            ApplicationCreate(company_name="Third"), test_session, test_user
+            ApplicationCreate(company_name="Third", vacancy_name="Vacancy 3"),
+            test_session,
+            test_user,
         )
 
         # reverse=False (default) → DESC: newest first
@@ -84,10 +99,13 @@ class TestApplicationCRUD:
     async def test_get_application_by_id(self, test_session, test_user):
         """Should return a specific application by ID."""
         created = await create_application(
-            ApplicationCreate(company_name="Target Corp"), test_session, test_user
+            ApplicationCreate(company_name="Target Corp", vacancy_name="Target Role"),
+            test_session,
+            test_user,
         )
         fetched = await get_application(created.id, test_session, test_user)
         assert fetched.company_name == "Target Corp"
+        assert fetched.vacancy_name == "Target Role"
         assert fetched.user_id == test_user.id
 
     async def test_get_application_not_found(self, test_session, test_user):
@@ -100,7 +118,9 @@ class TestApplicationCRUD:
     async def test_update_application(self, test_session, test_user):
         """Should update application fields."""
         created = await create_application(
-            ApplicationCreate(company_name="Old Corp"), test_session, test_user
+            ApplicationCreate(company_name="Old Corp", vacancy_name="Old Role"),
+            test_session,
+            test_user,
         )
         updated = await update_application(
             created.id,
@@ -110,11 +130,14 @@ class TestApplicationCRUD:
         )
         assert updated.company_name == "Updated Corp"
         assert updated.contacts == "new@test.com"
+        assert updated.vacancy_name == "Old Role"  # not updated, remain unchanged
 
     async def test_update_application_status(self, test_session, test_user):
         """Should update application status."""
         created = await create_application(
-            ApplicationCreate(company_name="Status Corp"), test_session, test_user
+            ApplicationCreate(company_name="Status Corp", vacancy_name="Status Role"),
+            test_session,
+            test_user,
         )
         updated = await update_application(
             created.id,
@@ -127,7 +150,9 @@ class TestApplicationCRUD:
     async def test_delete_application(self, test_session, test_user):
         """Should delete an application."""
         created = await create_application(
-            ApplicationCreate(company_name="Delete Corp"), test_session, test_user
+            ApplicationCreate(company_name="Delete Corp", vacancy_name="Delete Role"),
+            test_session,
+            test_user,
         )
         await delete_application(created.id, test_session, test_user)
 
@@ -139,7 +164,9 @@ class TestApplicationCRUD:
     async def test_isolation_between_users(self, test_session, test_user):
         """Should not leak applications between users."""
         await create_application(
-            ApplicationCreate(company_name="User1 App"), test_session, test_user
+            ApplicationCreate(company_name="User1 App", vacancy_name="User1 Role"),
+            test_session,
+            test_user,
         )
         # Create another user and check their list is empty
         from app.auth import get_password_hash

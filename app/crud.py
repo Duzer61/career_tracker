@@ -62,6 +62,7 @@ async def create_application(
     app = Application(
         user_id=current_user.id,
         company_name=app_data.company_name,
+        vacancy_name=app_data.vacancy_name,
         contacts=app_data.contacts,
         comments=app_data.comments,
         vacancy_url=app_data.vacancy_url,

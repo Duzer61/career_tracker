@@ -56,8 +56,9 @@ class TestApplicationCreate:
 
     def test_valid_application(self):
         """Should accept a minimal valid application."""
-        app = ApplicationCreate(company_name="Test Corp")
+        app = ApplicationCreate(company_name="Test Corp", vacancy_name="Python Developer")
         assert app.company_name == "Test Corp"
+        assert app.vacancy_name == "Python Developer"
         assert app.contacts is None
         assert app.comments is None
         assert app.vacancy_url is None
@@ -66,22 +67,24 @@ class TestApplicationCreate:
         """Should accept an application with all optional fields."""
         app = ApplicationCreate(
             company_name="Test Corp",
+            vacancy_name="Python Developer",
             contacts="hr@test.com",
             comments="Applied via LinkedIn",
             vacancy_url="https://test.com/job/123",
         )
         assert app.company_name == "Test Corp"
+        assert app.vacancy_name == "Python Developer"
         assert app.contacts == "hr@test.com"
 
     def test_empty_company_name(self):
         """Should reject empty company name."""
         with pytest.raises(ValidationError):
-            ApplicationCreate(company_name="")
+            ApplicationCreate(company_name="", vacancy_name="Python Developer")
 
     def test_company_name_too_long(self):
         """Should reject company name exceeding 255 characters."""
         with pytest.raises(ValidationError):
-            ApplicationCreate(company_name="A" * 256)
+            ApplicationCreate(company_name="A" * 256, vacancy_name="Python Developer")
 
 
 class TestApplicationUpdate:
@@ -98,9 +101,11 @@ class TestApplicationUpdate:
         """Should allow updating all fields simultaneously."""
         data = ApplicationUpdate(
             company_name="New Corp",
+            vacancy_name="Senior Python Developer",
             status="offer",
             contacts="new@test.com",
             comments="Updated",
             vacancy_url="https://test.com/new",
         )
         assert data.status == "offer"
+        assert data.vacancy_name == "Senior Python Developer"

@@ -59,6 +59,7 @@ class ApplicationResponse(BaseModel):
     user_id: int
     status: ApplicationStatus
     company_name: str
+    vacancy_name: str
     contacts: str | None = None
     comments: str | None = None
     vacancy_url: str | None = None
@@ -71,6 +72,7 @@ class ApplicationResponse(BaseModel):
 
 class ApplicationCreate(BaseModel):
     company_name: str = Field(..., min_length=1, max_length=255)
+    vacancy_name: str = Field(..., min_length=1, max_length=255)
     contacts: str | None = None
     comments: str | None = None
     vacancy_url: str | None = None
@@ -78,4 +80,5 @@ class ApplicationCreate(BaseModel):
 
 class ApplicationUpdate(ApplicationCreate):
     company_name: str | None = Field(None, min_length=1, max_length=255)
+    vacancy_name: str | None = Field(None, min_length=1, max_length=255)
     status: ApplicationStatus | None = None
