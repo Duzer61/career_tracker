@@ -6,6 +6,15 @@
     <title>Career Tracker - Карьерный монитор</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+
+    <!-- Open Graph / Social Preview -->
+    <meta property="og:title" content="Career Tracker - Карьерный монитор">
+    <meta property="og:description" content="Приложение для отслеживания статусов откликов на вакансии">
+    <meta property="og:image" content="{{ request.base_url }}static/preview.jpg">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{{ request.base_url }}static/preview.jpg">
 </head>
 <body>
     <div id="auth-container" class="hidden">
