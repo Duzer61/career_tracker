@@ -479,6 +479,7 @@ async function handleApplicationSubmit(e) {
 
     const applicationData = {
         company_name: document.getElementById('company-name').value,
+        vacancy_name: document.getElementById('vacancy-name').value,
         vacancy_url: document.getElementById('vacancy-url').value || null,
         contacts: document.getElementById('contacts').value || null,
         comments: document.getElementById('comments').value || null
@@ -629,7 +630,7 @@ function createCard(app) {
             </div>
         </div>
         <div class="card-body">
-            ${app.vacancy_url ? `<div class="card-field"><strong>Вакансия:</strong> <a href="${escapeHtml(app.vacancy_url)}" target="_blank">ссылка</a></div>` : ''}
+            <div class="card-field">${app.vacancy_url ? `<a href="${escapeHtml(app.vacancy_url)}" target="_blank" class="vacancy-link">${escapeHtml(app.vacancy_name || 'Not specified')}</a>` : `<strong>${escapeHtml(app.vacancy_name || 'Not specified')}</strong>`}</div>
             ${app.contacts ? `<div class="card-field"><strong>Контакты:</strong> ${escapeHtml(app.contacts)}</div>` : ''}
             ${commentsHtml}
         </div>
@@ -657,6 +658,7 @@ function openApplicationModal(application = null) {
     if (application) {
         modalTitle.textContent = 'Редактировать заявку';
         document.getElementById('company-name').value = application.company_name;
+        document.getElementById('vacancy-name').value = application.vacancy_name || '';
         document.getElementById('vacancy-url').value = application.vacancy_url || '';
         document.getElementById('contacts').value = application.contacts || '';
         document.getElementById('comments').value = application.comments || '';
@@ -681,7 +683,8 @@ function closeApplicationModal() {
 function openViewModal(application) {
     if (!application) return;
 
-    viewModalTitle.textContent = escapeHtml(application.company_name);
+    viewModalTitle.textContent = escapeHtml(application.company_name) +
+        (application.vacancy_name ? ` — ${escapeHtml(application.vacancy_name)}` : '');
 
     const statusLabel = STATUS_LABELS[application.status] || application.status;
 

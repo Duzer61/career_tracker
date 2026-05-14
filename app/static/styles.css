@@ -303,6 +303,12 @@ header h1 {
     margin-right: 5px;
 }
 
+.card-field a.vacancy-link {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: 600;
+}
+
 .card-comments {
     max-height: 60px;
     overflow: hidden;
