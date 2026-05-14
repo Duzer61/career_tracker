@@ -370,6 +370,98 @@ header h1 {
     color: #667eea;
 }
 
+/* View modal (read-only application details) */
+.view-modal-content {
+    max-width: 750px;
+}
+
+.view-modal-content #view-modal-title {
+    margin-bottom: 20px;
+    color: #667eea;
+    font-size: 22px;
+}
+
+.view-field {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.view-field:last-of-type {
+    border-bottom: none;
+}
+
+.view-field-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.view-field-value {
+    font-size: 17px;
+    color: #333;
+    line-height: 1.6;
+    user-select: text;
+    -webkit-user-select: text;
+    word-break: break-word;
+}
+
+.view-field-value a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.view-field-value a:hover {
+    text-decoration: underline;
+}
+
+.view-field-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #f0f0f0;
+    color: #555;
+}
+
+.view-field-status.status-created { background: #e8f5e9; color: #2e7d32; }
+.view-field-status.status-hr_interview { background: #e3f2fd; color: #1565c0; }
+.view-field-status.status-tech_interview { background: #f3e5f5; color: #6a1b9a; }
+.view-field-status.status-offer { background: #fff3e0; color: #e65100; }
+.view-field-status.status-auto_reject { background: #fbe9e7; color: #bf360c; }
+.view-field-status.status-rejected { background: #ffebee; color: #c62828; }
+.view-field-status.status-ignored { background: #eceff1; color: #546e7a; }
+
+.view-field-url {
+    font-size: 13px;
+    color: #667eea;
+    word-break: break-all;
+}
+
+.view-field-comments {
+    white-space: pre-wrap;
+}
+
+.view-field-row {
+    display: flex;
+    gap: 20px;
+}
+
+.view-field-row .view-field {
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .view-field-row {
+        flex-direction: column;
+        gap: 0;
+    }
+}
+
 /* Increased spacing for confirmation modal headings */
 #logout-modal .modal-content h2,
 #delete-modal .modal-content h2 {

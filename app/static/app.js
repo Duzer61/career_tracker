@@ -94,6 +94,7 @@ let usernameDisplay, logoutBtn, addApplicationBtn, kanbanBoard;
 let applicationModal, applicationForm, modalTitle, closeModal, cancelBtn;
 let logoutModal, confirmLogoutBtn, cancelLogoutBtn;
 let deleteModal, confirmDeleteBtn, cancelDeleteBtn;
+let viewModal, viewModalTitle, viewModalBody, closeViewBtn;
 let currentDeleteApplicationId = null;
 
 // Initialize
@@ -121,6 +122,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     deleteModal = document.getElementById('delete-modal');
     confirmDeleteBtn = document.getElementById('confirm-delete-btn');
     cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    viewModal = document.getElementById('view-modal');
+    viewModalTitle = document.getElementById('view-modal-title');
+    viewModalBody = document.getElementById('view-modal-body');
+    closeViewBtn = document.getElementById('close-view-btn');
     
     console.log('Elements initialized:', {
         authContainer: !!authContainer,
@@ -231,10 +236,15 @@ function setupEventListeners() {
 
     // Делегирование кликов по карточкам
     kanbanBoard.addEventListener('click', (e) => {
+        const viewBtn = e.target.closest('.card-btn.view');
         const editBtn = e.target.closest('.card-btn.edit');
         const deleteBtn = e.target.closest('.card-btn.delete');
 
-        if (editBtn) {
+        if (viewBtn) {
+            const card = viewBtn.closest('.card');
+            const app = applications.find(a => a.id === parseInt(card.dataset.applicationId));
+            openViewModal(app);
+        } else if (editBtn) {
             const card = editBtn.closest('.card');
             const app = applications.find(a => a.id === parseInt(card.dataset.applicationId));
             openApplicationModal(app);
@@ -243,6 +253,20 @@ function setupEventListeners() {
             deleteApplication(parseInt(card.dataset.applicationId));
         }
     });
+
+    // View modal
+    if (closeViewBtn) {
+        closeViewBtn.addEventListener('click', closeViewModal);
+    }
+    const viewCloseModal = viewModal?.querySelector('.close-modal');
+    if (viewCloseModal) {
+        viewCloseModal.addEventListener('click', closeViewModal);
+    }
+    if (viewModal) {
+        viewModal.addEventListener('click', (e) => {
+            if (e.target === viewModal) closeViewModal();
+        });
+    }
 
     console.log('Event listeners setup complete');
 }
@@ -599,6 +623,7 @@ function createCard(app) {
         <div class="card-header">
             <span class="card-company">${escapeHtml(app.company_name)}</span>
             <div class="card-actions">
+                <button class="card-btn view" title="Просмотр">👁️</button>
                 <button class="card-btn edit" title="Редактировать">✏️</button>
                 <button class="card-btn delete" title="Удалить">🗑️</button>
             </div>
@@ -614,8 +639,12 @@ function createCard(app) {
         </div>
     `;
 
-    // Event listeners
-
+    // Двойной клик для открытия просмотра
+    card.addEventListener('dblclick', (e) => {
+        // Игнорируем двойной клик по кнопкам действий
+        if (e.target.closest('.card-btn')) return;
+        openViewModal(app);
+    });
 
     return card;
 }
@@ -646,6 +675,70 @@ function closeApplicationModal() {
     applicationModal.classList.add('hidden');
     editingApplicationId = null;
     applicationForm.reset();
+}
+
+// View Modal (read-only)
+function openViewModal(application) {
+    if (!application) return;
+
+    viewModalTitle.textContent = escapeHtml(application.company_name);
+
+    const statusLabel = STATUS_LABELS[application.status] || application.status;
+
+    const daysWarning = application.days_since_creation > 7
+        ? `<span style="color: #e74c3c;">${application.days_since_creation} дн.</span>`
+        : `${application.days_since_creation} дн.`;
+
+    viewModalBody.innerHTML = `
+        <div class="view-field-row">
+            <div class="view-field">
+                <div class="view-field-label">Компания</div>
+                <div class="view-field-value">${escapeHtml(application.company_name)}</div>
+            </div>
+            <div class="view-field">
+                <div class="view-field-label">Статус</div>
+                <div class="view-field-value">
+                    <span class="view-field-status status-${application.status}">${escapeHtml(statusLabel)}</span>
+                </div>
+            </div>
+        </div>
+        ${application.vacancy_url ? `
+        <div class="view-field">
+            <div class="view-field-label">Ссылка на вакансию</div>
+            <div class="view-field-value view-field-url">
+                <a href="${escapeHtml(application.vacancy_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(application.vacancy_url)}</a>
+            </div>
+        </div>
+        ` : ''}
+        ${application.contacts ? `
+        <div class="view-field">
+            <div class="view-field-label">Контакты</div>
+            <div class="view-field-value">${escapeHtml(application.contacts)}</div>
+        </div>
+        ` : ''}
+        ${application.comments ? `
+        <div class="view-field">
+            <div class="view-field-label">Комментарии</div>
+            <div class="view-field-value view-field-comments">${escapeHtml(application.comments)}</div>
+        </div>
+        ` : ''}
+        <div class="view-field-row">
+            <div class="view-field">
+                <div class="view-field-label">Дата создания</div>
+                <div class="view-field-value">${formatDate(application.created_at)}</div>
+            </div>
+            <div class="view-field">
+                <div class="view-field-label">Дней в работе</div>
+                <div class="view-field-value">${daysWarning}</div>
+            </div>
+        </div>
+    `;
+
+    viewModal.classList.remove('hidden');
+}
+
+function closeViewModal() {
+    viewModal.classList.add('hidden');
 }
 
 // Drag and Drop
