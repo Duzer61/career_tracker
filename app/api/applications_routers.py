@@ -4,6 +4,7 @@ from app.auth import get_current_user
 from app.crud import (
     create_application,
     delete_application,
+    delete_status_history_entry,
     get_application,
     get_application_status_history,
     get_applications,
@@ -66,6 +67,23 @@ async def update_application_endpoint(
     """
     application = await update_application(application_id, new_app_data, db, current_user)
     return application
+
+
+@router.delete(
+    "/{application_id}/history/{history_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_status_history_endpoint(
+    application_id: int,
+    history_id: int,
+    db: SessionDep,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Delete a status history entry. Cannot delete the first or last entry.
+    """
+    await delete_status_history_entry(application_id, history_id, db, current_user)
+    return None
 
 
 @router.get("/{application_id}/history", response_model=list[ApplicationStatusHistoryResponse])

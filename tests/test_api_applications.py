@@ -1,5 +1,6 @@
 """Integration tests for Applications API endpoints."""
 
+from app.db.models import ApplicationStatus, ApplicationStatusHistory
 from tests.helpers import set_client_cookies
 
 
@@ -28,6 +29,13 @@ class TestApplicationsAPI:
         """Helper to create an application."""
         payload = {"company_name": company_name, "vacancy_name": vacancy_name, **kwargs}
         return await client.post(self.APP_URL, json=payload)
+
+    async def _add_history_entry(self, session, app_id: int, status: str):
+        """Directly insert an ApplicationStatusHistory row for testing."""
+        status_enum = ApplicationStatus(status) if isinstance(status, str) else status
+        entry = ApplicationStatusHistory(application_id=app_id, status=status_enum)
+        session.add(entry)
+        await session.commit()
 
     # ── List ──────────────────────────────────
 
@@ -232,3 +240,107 @@ class TestApplicationsAPI:
         """Should return 401 without auth for history endpoint."""
         response = await client.get(f"{self.APP_URL}/1/history")
         assert response.status_code == 401
+
+    # ── Delete History ───────────────────────
+
+    async def test_delete_middle_history_entry(self, client):
+        """Should delete a middle history entry successfully."""
+        await self._setup_user(client)
+        created = await self._create_app(client, "Delete History Corp")
+        app_id = created.json()["id"]
+
+        # Create two more status changes so we have 3 entries
+        await client.patch(f"{self.APP_URL}/{app_id}", json={"status": "hr_interview"})
+        await client.patch(f"{self.APP_URL}/{app_id}", json={"status": "offer"})
+
+        history_resp = await client.get(f"{self.APP_URL}/{app_id}/history")
+        history = history_resp.json()
+        assert len(history) == 3
+
+        middle_id = history[1]["id"]
+
+        del_resp = await client.delete(f"{self.APP_URL}/{app_id}/history/{middle_id}")
+        assert del_resp.status_code == 204
+
+        history_resp = await client.get(f"{self.APP_URL}/{app_id}/history")
+        assert len(history_resp.json()) == 2
+
+    async def test_delete_first_history_entry_fails(self, client):
+        """Should reject deleting the first (created) entry."""
+        await self._setup_user(client)
+        created = await self._create_app(client, "First Entry Corp")
+        app_id = created.json()["id"]
+        await client.patch(f"{self.APP_URL}/{app_id}", json={"status": "hr_interview"})
+        await client.patch(f"{self.APP_URL}/{app_id}", json={"status": "offer"})
+
+        history = (await client.get(f"{self.APP_URL}/{app_id}/history")).json()
+        first_id = history[0]["id"]
+
+        resp = await client.delete(f"{self.APP_URL}/{app_id}/history/{first_id}")
+        assert resp.status_code == 409
+
+    async def test_delete_last_history_entry_with_more_than_2_entries_fails(self, client):
+        """Should reject deleting the last entry when there are > 2 entries."""
+        await self._setup_user(client)
+        created = await self._create_app(client, "Last Entry Corp")
+        app_id = created.json()["id"]
+        await client.patch(f"{self.APP_URL}/{app_id}", json={"status": "hr_interview"})
+        await client.patch(f"{self.APP_URL}/{app_id}", json={"status": "offer"})
+
+        history = (await client.get(f"{self.APP_URL}/{app_id}/history")).json()
+        assert len(history) == 3
+        last_id = history[-1]["id"]
+
+        resp = await client.delete(f"{self.APP_URL}/{app_id}/history/{last_id}")
+        assert resp.status_code == 409
+
+    async def test_delete_last_history_entry_with_2_entries_matching_status(
+        self, client, test_session
+    ):
+        """Should allow deleting the last of 2 entries if statuses match."""
+        await self._setup_user(client)
+        created = await self._create_app(client, "Duplicate Corp")
+        app_id = created.json()["id"]
+
+        # Directly insert a second entry with the same status "created"
+        await self._add_history_entry(test_session, app_id, "created")
+
+        history = (await client.get(f"{self.APP_URL}/{app_id}/history")).json()
+        assert len(history) == 2
+        assert history[0]["status"] == "created"
+        assert history[1]["status"] == "created"
+
+        last_id = history[-1]["id"]
+        resp = await client.delete(f"{self.APP_URL}/{app_id}/history/{last_id}")
+        assert resp.status_code == 204
+
+        history = (await client.get(f"{self.APP_URL}/{app_id}/history")).json()
+        assert len(history) == 1
+
+    async def test_delete_last_history_entry_with_2_entries_diff_status_fails(self, client):
+        """Should reject deleting the last of 2 entries if statuses differ."""
+        await self._setup_user(client)
+        created = await self._create_app(client, "Diff Status Corp")
+        app_id = created.json()["id"]
+
+        await client.patch(f"{self.APP_URL}/{app_id}", json={"status": "hr_interview"})
+
+        history = (await client.get(f"{self.APP_URL}/{app_id}/history")).json()
+        assert len(history) == 2
+        assert history[0]["status"] == "created"
+        assert history[1]["status"] == "hr_interview"
+
+        last_id = history[-1]["id"]
+        resp = await client.delete(f"{self.APP_URL}/{app_id}/history/{last_id}")
+        assert resp.status_code == 409
+
+    async def test_delete_history_single_entry_fails(self, client):
+        """Should reject deleting when there is only 1 entry."""
+        await self._setup_user(client)
+        created = await self._create_app(client, "Single Entry Corp")
+        app_id = created.json()["id"]
+
+        history = (await client.get(f"{self.APP_URL}/{app_id}/history")).json()
+        assert len(history) == 1
+        resp = await client.delete(f"{self.APP_URL}/{app_id}/history/{history[0]['id']}")
+        assert resp.status_code == 409

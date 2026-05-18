@@ -145,6 +145,74 @@ async def get_application_status_history(
     return result.all()
 
 
+async def delete_status_history_entry(
+    app_id: int, history_id: int, db: AsyncSession, current_user: User
+) -> None:
+    """
+    Delete a status history entry.
+    Rules:
+    - First entry can never be deleted.
+    - Last entry can be deleted only if there are exactly 2 entries
+      AND both have the same status (i.e. they are duplicates).
+    - Middle entries can be deleted freely.
+    """
+    application = await get_application(app_id, db, current_user)
+
+    result = await db.scalars(
+        select(ApplicationStatusHistory)
+        .where(ApplicationStatusHistory.application_id == application.id)
+        .order_by(asc(ApplicationStatusHistory.changed_at))
+    )
+    all_entries = result.all()
+
+    if len(all_entries) < 2:
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete history entry: at least 2 entries are required",
+        )
+
+    first_id = all_entries[0].id
+    last_id = all_entries[-1].id
+
+    # Never allow deleting the first entry
+    if history_id == first_id:
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete the first status history entry",
+        )
+
+    # Allow deleting the last entry only under specific conditions
+    if history_id == last_id:
+        if len(all_entries) > 2:
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot delete the last status history entry when there are more than 2 entries",
+            )
+        # Exactly 2 entries — allow only if statuses match
+        if all_entries[0].status != all_entries[1].status:
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot delete the last status history entry: statuses of the two entries differ",
+            )
+        # Statuses match → fall through to deletion
+
+    entry = await db.scalar(
+        select(ApplicationStatusHistory).where(
+            ApplicationStatusHistory.id == history_id,
+            ApplicationStatusHistory.application_id == application.id,
+        )
+    )
+    if not entry:
+        raise HTTPException(status_code=404, detail="Status history entry not found")
+
+    try:
+        await db.delete(entry)
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise ValueError(f"Error deleting status history entry: {e}")
+
+
 async def delete_application(application_id: int, db: AsyncSession, current_user: User) -> None:
     """
     Delete an application.
