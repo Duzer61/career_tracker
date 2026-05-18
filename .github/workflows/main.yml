@@ -6,9 +6,27 @@ on:
       - main
 
 jobs:
+  tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        run: |
+          pip install uv
+          uv sync
+      - name: Run pytest
+        run: uv run pytest
+
   build_and_push_to_docker_hub:
     name: Push Docker image to DockerHub
     runs-on: ubuntu-latest
+    needs: [tests]
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
