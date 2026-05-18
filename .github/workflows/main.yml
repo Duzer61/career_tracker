@@ -21,6 +21,22 @@ jobs:
           pip install uv
           uv sync --group test
       - name: Run pytest
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_HOST: test
+          POSTGRES_PORT: "5432"
+          POSTGRES_DB: test
+          REDIS_PASSWORD: test
+          REDIS_HOST: test
+          REDIS_PORT: "6379"
+          SECRET_KEY: test
+          ALGORITHM: HS256
+          ACCESS_TOKEN_EXP_MINUTES: "30"
+          REFRESH_TOKEN_EXP_DAYS: "7"
+          ENVIRON: test
+          ONLY_ALLOWED_USERNAMES_MODE: "false"
+          ALLOWED_USERNAMES: ""
         run: uv run pytest
 
   build_and_push_to_docker_hub:
