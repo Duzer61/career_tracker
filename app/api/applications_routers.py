@@ -5,12 +5,18 @@ from app.crud import (
     create_application,
     delete_application,
     get_application,
+    get_application_status_history,
     get_applications,
     update_application,
 )
 from app.db.database import SessionDep
 from app.db.models import User
-from app.schemas import ApplicationCreate, ApplicationResponse, ApplicationUpdate
+from app.schemas import (
+    ApplicationCreate,
+    ApplicationResponse,
+    ApplicationStatusHistoryResponse,
+    ApplicationUpdate,
+)
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 
@@ -60,6 +66,19 @@ async def update_application_endpoint(
     """
     application = await update_application(application_id, new_app_data, db, current_user)
     return application
+
+
+@router.get("/{application_id}/history", response_model=list[ApplicationStatusHistoryResponse])
+async def get_application_status_history_endpoint(
+    application_id: int,
+    db: SessionDep,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get status history for an application.
+    """
+    history = await get_application_status_history(application_id, db, current_user)
+    return history
 
 
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)

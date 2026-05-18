@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_password_hash
-from app.db.models import Application, User
+from app.db.models import Application, ApplicationStatus, ApplicationStatusHistory, User
 from app.schemas import ApplicationCreate, ApplicationUpdate, UserCreate
 
 # User crud
@@ -69,6 +69,11 @@ async def create_application(
     )
     db.add(app)
     try:
+        await db.flush()
+        history_entry = ApplicationStatusHistory(
+            application_id=app.id, status=ApplicationStatus.CREATED
+        )
+        db.add(history_entry)
         await db.commit()
         await db.refresh(app)
         return app
@@ -100,8 +105,18 @@ async def update_application(
     """
     application = await get_application(app_id, db, current_user)
     update_data = new_app_data.model_dump(exclude_unset=True)
+
+    old_status = application.status
     for key, value in update_data.items():
         setattr(application, key, value)
+
+    new_status = application.status
+    if "status" in update_data and old_status != new_status:
+        history_entry = ApplicationStatusHistory(
+            application_id=application.id,
+            status=new_status,
+        )
+        db.add(history_entry)
 
     try:
         await db.commit()
@@ -113,6 +128,21 @@ async def update_application(
     except SQLAlchemyError as e:
         await db.rollback()
         raise ValueError(f"Error updating application: {e}")
+
+
+async def get_application_status_history(
+    app_id: int, db: AsyncSession, current_user: User
+) -> list[ApplicationStatusHistory]:
+    """
+    Return status history for an application after verifying ownership.
+    """
+    application = await get_application(app_id, db, current_user)
+    result = await db.scalars(
+        select(ApplicationStatusHistory)
+        .where(ApplicationStatusHistory.application_id == application.id)
+        .order_by(asc(ApplicationStatusHistory.changed_at))
+    )
+    return result.all()
 
 
 async def delete_application(application_id: int, db: AsyncSession, current_user: User) -> None:

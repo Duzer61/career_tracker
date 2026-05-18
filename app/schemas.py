@@ -78,6 +78,14 @@ class ApplicationCreate(BaseModel):
     vacancy_url: str | None = None
 
 
+class ApplicationStatusHistoryResponse(BaseModel):
+    id: int
+    status: ApplicationStatus
+    changed_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ApplicationUpdate(ApplicationCreate):
     company_name: str | None = Field(None, min_length=1, max_length=255)
     vacancy_name: str | None = Field(None, min_length=1, max_length=255)

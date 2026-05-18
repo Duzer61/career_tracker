@@ -195,3 +195,40 @@ class TestApplicationsAPI:
 
         response = await client.delete(f"{self.APP_URL}/1")
         assert response.status_code == 401
+
+    # ── Status History ───────────────────────
+
+    async def test_create_application_adds_status_history(self, client):
+        """Should create a CREATED status history entry when creating an app."""
+        await self._setup_user(client)
+        created = await self._create_app(client, "History Corp")
+        app_id = created.json()["id"]
+
+        history_resp = await client.get(f"{self.APP_URL}/{app_id}/history")
+        assert history_resp.status_code == 200
+        history = history_resp.json()
+        assert len(history) == 1
+        assert history[0]["status"] == "created"
+
+    async def test_update_status_adds_history_entry(self, client):
+        """Should add a new history entry when status changes."""
+        await self._setup_user(client)
+        created = await self._create_app(client, "Status Change Corp")
+        app_id = created.json()["id"]
+
+        await client.patch(
+            f"{self.APP_URL}/{app_id}",
+            json={"status": "hr_interview"},
+        )
+
+        history_resp = await client.get(f"{self.APP_URL}/{app_id}/history")
+        assert history_resp.status_code == 200
+        history = history_resp.json()
+        assert len(history) == 2
+        assert history[0]["status"] == "created"
+        assert history[1]["status"] == "hr_interview"
+
+    async def test_get_status_history_unauthorized(self, client):
+        """Should return 401 without auth for history endpoint."""
+        response = await client.get(f"{self.APP_URL}/1/history")
+        assert response.status_code == 401
