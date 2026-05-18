@@ -730,9 +730,132 @@ function openViewModal(application) {
                 <div class="view-field-value">${daysWarning}</div>
             </div>
         </div>
+        <!-- Status History Section -->
+        <div class="history-section">
+            <div class="history-title">История статусов</div>
+            <div id="history-loading" style="font-size: 14px; color: #888;">Загрузка...</div>
+            <ul class="history-list" id="history-list"></ul>
+            <div class="history-error" id="history-error"></div>
+        </div>
     `;
 
     viewModal.classList.remove('hidden');
+
+    // Load status history
+    loadStatusHistory(application.id);
+}
+
+async function loadStatusHistory(applicationId) {
+    const listEl = document.getElementById('history-list');
+    const loadingEl = document.getElementById('history-loading');
+    const errorEl = document.getElementById('history-error');
+
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/applications/${applicationId}/history`);
+        if (!response.ok) throw new Error('Failed to load history');
+
+        const history = await response.json();
+        loadingEl.style.display = 'none';
+        renderStatusHistory(history, applicationId);
+    } catch (err) {
+        loadingEl.style.display = 'none';
+        errorEl.textContent = 'Ошибка загрузки истории статусов';
+        errorEl.style.display = 'block';
+    }
+}
+
+function canDeleteHistoryEntry(index, history) {
+    // Первая запись — никогда нельзя удалять
+    if (index === 0) return false;
+
+    // Последняя запись
+    if (index === history.length - 1) {
+        if (history.length > 2) return false;               // записей > 2
+        if (history.length === 2) {                          // ровно 2 записи
+            return history[0].status === history[1].status;  // можно только если статусы совпадают
+        }
+        return false;
+    }
+
+    // Средняя запись (не первая и не последняя) — всегда можно
+    return true;
+}
+
+function renderStatusHistory(history, applicationId) {
+    const listEl = document.getElementById('history-list');
+    listEl.innerHTML = '';
+
+    history.forEach((entry, index) => {
+        const isCurrent = index === history.length - 1;
+        const li = document.createElement('li');
+        li.className = 'history-entry' + (isCurrent ? ' is-current' : '');
+
+        const date = formatDateTime(entry.changed_at);
+        const showDelete = canDeleteHistoryEntry(index, history);
+
+        li.innerHTML = `
+            <span class="history-entry-date">${date}</span>
+            <span class="history-entry-status">
+                <span class="status-badge status-${entry.status}">${STATUS_LABELS[entry.status] || entry.status}</span>
+                ${isCurrent ? '<span class="history-entry-current-label">текущий</span>' : ''}
+            </span>
+            ${showDelete ? '<button class="history-delete-btn" title="Удалить запись истории" data-history-id="' + entry.id + '">🗑️</button>' : ''}
+        `;
+
+        listEl.appendChild(li);
+    });
+
+    // Attach delete handlers only to existing delete buttons
+    listEl.querySelectorAll('.history-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const historyId = parseInt(btn.dataset.historyId);
+            await deleteHistoryEntry(applicationId, historyId);
+        });
+    });
+}
+
+async function deleteHistoryEntry(applicationId, historyId) {
+    if (!confirm('Удалить эту запись истории?')) return;
+
+    const errorEl = document.getElementById('history-error');
+    errorEl.style.display = 'none';
+
+    try {
+        const response = await authenticatedFetch(
+            `${API_BASE}/applications/${applicationId}/history/${historyId}`,
+            { method: 'DELETE' }
+        );
+
+        if (response.ok) {
+            // Reload history
+            await loadStatusHistory(applicationId);
+        } else {
+            const data = await response.json();
+            const detail = typeof data.detail === 'string'
+                ? data.detail
+                : (data.detail?.message || 'Ошибка удаления');
+            errorEl.textContent = detail;
+            errorEl.style.display = 'block';
+        }
+    } catch (err) {
+        errorEl.textContent = 'Ошибка подключения';
+        errorEl.style.display = 'block';
+    }
+}
+
+function formatDateTime(dateString) {
+    // Сервер отдаёт datetime без часового пояса (UTC, но без Z на конце)
+    // Принудительно добавляем Z, чтобы new Date() трактовал время как UTC
+    const utcString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const date = new Date(utcString);
+    return date.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
 function closeViewModal() {
@@ -965,7 +1088,8 @@ function escapeHtml(text) {
 }
 
 function formatDate(dateString) {
-    const date = new Date(dateString);
+    const utcString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const date = new Date(utcString);
     return date.toLocaleDateString('ru-RU');
 }
 
