@@ -221,19 +221,92 @@ function setupEventListeners() {
 
     // Горизонтальная прокрутка доски колёсиком мыши
     kanbanBoard.addEventListener('wheel', (e) => {
-        const container = e.target.closest('.cards-container');
-        if (container) {
-            // Если есть вертикальный скролл и он не на границе — пропускаем
-            const canScrollDown = container.scrollTop < container.scrollHeight - container.clientHeight - 1;
-            const canScrollUp = container.scrollTop > 1;
-            if ((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)) {
-                return; // пусть работает вертикальный скролл колонки
-            }
+        // Если курсор внутри колонки (зона вертикального скролла) — не перехватываем
+        if (e.target.closest('.cards-container')) {
+            return;
         }
         // Иначе скроллим доску горизонтально
         e.preventDefault();
         kanbanBoard.scrollLeft += e.deltaY * 1.5;
     }, { passive: false });
+
+    // Панорамирование доски через Пробел + перетаскивание мышью
+    let spacePressed = false;
+    let panStartX = 0;
+    let panStartScrollLeft = 0;
+    let isPanning = false;
+    let panRafId = null;
+
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            spacePressed = true;
+            e.preventDefault(); // не скроллить страницу вниз
+            kanbanBoard.classList.add('pan-active');
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.code === 'Space') {
+            spacePressed = false;
+            if (isPanning) {
+                isPanning = false;
+                kanbanBoard.classList.remove('pan-grabbing');
+                document.body.style.userSelect = '';
+                if (panRafId) {
+                    cancelAnimationFrame(panRafId);
+                    panRafId = null;
+                }
+            }
+            kanbanBoard.classList.remove('pan-active', 'pan-grabbing');
+        }
+    });
+
+    kanbanBoard.addEventListener('mousedown', (e) => {
+        if (!spacePressed) return;
+        e.preventDefault(); // блокируем выделение текста
+        isPanning = true;
+        panStartX = e.clientX;
+        panStartScrollLeft = kanbanBoard.scrollLeft;
+        kanbanBoard.classList.add('pan-grabbing');
+        document.body.style.userSelect = 'none'; // глобально запрещаем выделение
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        e.preventDefault();
+        if (panRafId) {
+            cancelAnimationFrame(panRafId);
+        }
+        const clientX = e.clientX;
+        panRafId = requestAnimationFrame(() => {
+            kanbanBoard.scrollLeft = panStartScrollLeft - (clientX - panStartX);
+            panRafId = null;
+        });
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isPanning) {
+            isPanning = false;
+            kanbanBoard.classList.remove('pan-grabbing');
+            document.body.style.userSelect = '';
+            if (panRafId) {
+                cancelAnimationFrame(panRafId);
+                panRafId = null;
+            }
+        }
+    });
+
+    document.addEventListener('mouseleave', () => {
+        if (isPanning) {
+            isPanning = false;
+            kanbanBoard.classList.remove('pan-grabbing');
+            document.body.style.userSelect = '';
+            if (panRafId) {
+                cancelAnimationFrame(panRafId);
+                panRafId = null;
+            }
+        }
+    });
 
     // Делегирование кликов по карточкам
     kanbanBoard.addEventListener('click', (e) => {

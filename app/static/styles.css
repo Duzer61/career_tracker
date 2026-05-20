@@ -192,6 +192,24 @@ header h1 {
     scrollbar-color: rgba(102, 126, 234, 0.85) rgba(200, 200, 200, 0.5);
 }
 
+.kanban-board.pan-active {
+    cursor: grab;
+}
+
+.kanban-board.pan-active.pan-grabbing {
+    cursor: grabbing;
+}
+
+.kanban-board.pan-active .card,
+.kanban-board.pan-grabbing .card {
+    cursor: grab;
+}
+
+.kanban-board.pan-grabbing .card {
+    cursor: grabbing;
+    pointer-events: none;
+}
+
 .kanban-board::-webkit-scrollbar {
     height: 8px;
 }
