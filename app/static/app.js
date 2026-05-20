@@ -219,6 +219,22 @@ function setupEventListeners() {
     // Drag and drop
     setupDragAndDrop();
 
+    // Горизонтальная прокрутка доски колёсиком мыши
+    kanbanBoard.addEventListener('wheel', (e) => {
+        const container = e.target.closest('.cards-container');
+        if (container) {
+            // Если есть вертикальный скролл и он не на границе — пропускаем
+            const canScrollDown = container.scrollTop < container.scrollHeight - container.clientHeight - 1;
+            const canScrollUp = container.scrollTop > 1;
+            if ((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)) {
+                return; // пусть работает вертикальный скролл колонки
+            }
+        }
+        // Иначе скроллим доску горизонтально
+        e.preventDefault();
+        kanbanBoard.scrollLeft += e.deltaY * 1.5;
+    }, { passive: false });
+
     // Делегирование кликов по карточкам
     kanbanBoard.addEventListener('click', (e) => {
         const viewBtn = e.target.closest('.card-btn.view');
