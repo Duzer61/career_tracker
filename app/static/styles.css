@@ -637,6 +637,49 @@ header h1 {
     display: none;
 }
 
+/* Error page (404) */
+.error-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.error-code {
+    font-size: 120px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #a8b8f0 0%, #d4a8e0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.error-message {
+    font-size: 28px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.error-description {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 30px;
+}
+
+.error-btn {
+    display: inline-block;
+    width: auto;
+    padding: 14px 36px;
+    text-decoration: none;
+    font-size: 16px;
+}
+
 /* Increased spacing for confirmation modal headings */
 #logout-modal .modal-content h2,
 #delete-modal .modal-content h2 {

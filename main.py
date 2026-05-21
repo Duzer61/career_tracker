@@ -41,6 +41,13 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    return templates.TemplateResponse(
+        name="404.html", context={"request": request}, request=request, status_code=404
+    )
+
+
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse(
