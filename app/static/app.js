@@ -239,6 +239,11 @@ function setupEventListeners() {
 
     document.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
+            // Если фокус в поле ввода — не перехватываем пробел
+            const tag = e.target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) {
+                return;
+            }
             spacePressed = true;
             e.preventDefault(); // не скроллить страницу вниз
             kanbanBoard.classList.add('pan-active');
@@ -263,6 +268,8 @@ function setupEventListeners() {
 
     kanbanBoard.addEventListener('mousedown', (e) => {
         if (!spacePressed) return;
+        // Если клик внутри поля ввода — не панорамируем
+        if (e.target.closest('input, textarea, [contenteditable]')) return;
         e.preventDefault(); // блокируем выделение текста
         isPanning = true;
         panStartX = e.clientX;
