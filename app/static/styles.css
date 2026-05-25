@@ -236,6 +236,7 @@ header h1 {
     border: 1px solid #d0d7de;
     border-radius: 6px;
     font-size: 13px;
+    font-family: inherit;
     color: #24292f;
     background: #fff;
 }
