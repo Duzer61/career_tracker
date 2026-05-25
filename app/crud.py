@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import HTTPException
 from sqlalchemy import asc, desc, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -40,15 +42,30 @@ async def delete_user(db: AsyncSession, current_user: User) -> None:  # TODO: Д
 # Board, applications crud
 
 
-async def get_applications(db: AsyncSession, reverse, current_user: User) -> list[Application]:
+async def get_applications(
+    db: AsyncSession,
+    reverse: bool,
+    current_user: User,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+) -> list[Application]:
     """
     Return all applications for current user. Ordered by creation date. Descending.
+
+    Parameters:
+        date_from: filter applications created at or after this datetime.
+        date_to: filter applications created at or before this datetime.
     """
-    result = await db.scalars(
-        select(Application)
-        .where(Application.user_id == current_user.id)
-        .order_by(asc(Application.created_at) if reverse else desc(Application.created_at))
-    )
+    query = select(Application).where(Application.user_id == current_user.id)
+
+    if date_from is not None:
+        query = query.where(Application.created_at >= date_from)
+    if date_to is not None:
+        query = query.where(Application.created_at <= date_to)
+
+    query = query.order_by(asc(Application.created_at) if reverse else desc(Application.created_at))
+
+    result = await db.scalars(query)
     applications = result.all()
     return applications
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.auth import get_current_user
 from app.crud import (
@@ -18,18 +18,41 @@ from app.schemas import (
     ApplicationStatusHistoryResponse,
     ApplicationUpdate,
 )
+from app.utils import parse_date_filters, utc_now
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 
 
 @router.get("", response_model=list[ApplicationResponse])
 async def get_applications_endpoint(
-    db: SessionDep, reverse: bool = False, current_user: User = Depends(get_current_user)
+    db: SessionDep,
+    reverse: bool = False,
+    period: str | None = Query(
+        None,
+        description="Предустановленный период: today, week, month, old",
+    ),
+    date_from: str | None = Query(
+        None,
+        description="Начало произвольного интервала (ISO-формат, например 2025-01-01)",
+    ),
+    date_to: str | None = Query(
+        None,
+        description="Конец произвольного интервала (ISO-формат, например 2025-01-31)",
+    ),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Get all applications for current user.
+    Get all applications for current user. Supports date filtering.
+
+    - **period**: today / week / month / old
+    - **date_from** / **date_to**: кастомный интервал (используется если period не задан)
     """
-    applications = await get_applications(db, reverse, current_user)
+    now = utc_now()
+    date_from_dt, date_to_dt = parse_date_filters(period, date_from, date_to, now)
+
+    applications = await get_applications(
+        db, reverse, current_user, date_from=date_from_dt, date_to=date_to_dt
+    )
     return applications
 
 

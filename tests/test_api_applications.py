@@ -1,6 +1,9 @@
 """Integration tests for Applications API endpoints."""
 
-from app.db.models import ApplicationStatus, ApplicationStatusHistory
+from datetime import datetime, timedelta
+
+from app.db.models import Application, ApplicationStatus, ApplicationStatusHistory
+from app.utils import utc_now
 from tests.helpers import set_client_cookies
 
 
@@ -344,3 +347,146 @@ class TestApplicationsAPI:
         assert len(history) == 1
         resp = await client.delete(f"{self.APP_URL}/{app_id}/history/{history[0]['id']}")
         assert resp.status_code == 409
+
+    # ── Date filtering ────────────────────────
+
+    async def _set_app_created_at(self, test_session, app_id: int, dt: datetime):
+        """Set created_at directly in DB for testing purposes."""
+        app = await test_session.get(Application, app_id)
+        app.created_at = dt
+        await test_session.commit()
+
+    async def test_filter_period_today(self, client, test_session):
+        """period=today returns only today's applications."""
+        await self._setup_user(client)
+
+        # Create an application "now"
+        await self._create_app(client, "Today Corp")
+
+        # Create an application "3 days ago"
+        resp2 = await self._create_app(client, "Old Corp")
+        app2_id = resp2.json()["id"]
+        three_days_ago = utc_now() - timedelta(days=3)
+        await self._set_app_created_at(test_session, app2_id, three_days_ago)
+
+        response = await client.get(self.APP_URL, params={"period": "today"})
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["company_name"] == "Today Corp"
+
+    async def test_filter_period_week(self, client, test_session):
+        """period=week returns applications from the last 7 days."""
+        await self._setup_user(client)
+
+        await self._create_app(client, "Recent Corp")
+
+        resp2 = await self._create_app(client, "Old Corp")
+        app2_id = resp2.json()["id"]
+        ten_days_ago = utc_now() - timedelta(days=10)
+        await self._set_app_created_at(test_session, app2_id, ten_days_ago)
+
+        response = await client.get(self.APP_URL, params={"period": "week"})
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["company_name"] == "Recent Corp"
+
+    async def test_filter_period_month(self, client, test_session):
+        """period=month returns applications from the last 30 days."""
+        await self._setup_user(client)
+
+        await self._create_app(client, "This Month Corp")
+
+        resp2 = await self._create_app(client, "Very Old Corp")
+        app2_id = resp2.json()["id"]
+        forty_days_ago = utc_now() - timedelta(days=40)
+        await self._set_app_created_at(test_session, app2_id, forty_days_ago)
+
+        response = await client.get(self.APP_URL, params={"period": "month"})
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["company_name"] == "This Month Corp"
+
+    async def test_filter_period_old(self, client, test_session):
+        """period=old returns applications older than 30 days."""
+        await self._setup_user(client)
+
+        await self._create_app(client, "Recent Corp")
+
+        resp2 = await self._create_app(client, "Old Corp")
+        app2_id = resp2.json()["id"]
+        forty_days_ago = utc_now() - timedelta(days=40)
+        await self._set_app_created_at(test_session, app2_id, forty_days_ago)
+
+        response = await client.get(self.APP_URL, params={"period": "old"})
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["company_name"] == "Old Corp"
+
+    async def test_filter_custom_date_range(self, client, test_session):
+        """Custom date_from/date_to returns apps within that range."""
+        await self._setup_user(client)
+
+        resp1 = await self._create_app(client, "Within Range Corp")
+        app1_id = resp1.json()["id"]
+        date_within = utc_now() - timedelta(days=5)
+        await self._set_app_created_at(test_session, app1_id, date_within)
+
+        resp2 = await self._create_app(client, "Out of Range Corp")
+        app2_id = resp2.json()["id"]
+        date_outside = utc_now() - timedelta(days=20)
+        await self._set_app_created_at(test_session, app2_id, date_outside)
+
+        seven_days_ago = (utc_now() - timedelta(days=7)).strftime("%Y-%m-%d")
+        now_str = utc_now().strftime("%Y-%m-%d")
+
+        response = await client.get(
+            self.APP_URL,
+            params={"date_from": seven_days_ago, "date_to": now_str},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["company_name"] == "Within Range Corp"
+
+    async def test_filter_custom_date_same_day(self, client, test_session):
+        """Custom date_from == date_to should include apps created on that day."""
+        await self._setup_user(client)
+
+        # Создаём отклик "сегодня"
+        await self._create_app(client, "Today Corp")
+
+        # Создаём отклик "вчера"
+        resp_yesterday = await self._create_app(client, "Yesterday Corp")
+        app_yesterday_id = resp_yesterday.json()["id"]
+        yesterday = utc_now() - timedelta(days=1)
+        await self._set_app_created_at(test_session, app_yesterday_id, yesterday)
+
+        # Фильтр: date_from = date_to = today → должен вернуть только Today Corp
+        today_str = utc_now().strftime("%Y-%m-%d")
+        response = await client.get(
+            self.APP_URL,
+            params={"date_from": today_str, "date_to": today_str},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["company_name"] == "Today Corp"
+
+    async def test_filter_invalid_period(self, client):
+        """Invalid period value returns 422."""
+        await self._setup_user(client)
+        response = await client.get(self.APP_URL, params={"period": "invalid"})
+        assert response.status_code == 422
+
+    async def test_filter_invalid_date_format(self, client):
+        """Invalid date_from format returns 422."""
+        await self._setup_user(client)
+        response = await client.get(
+            self.APP_URL,
+            params={"date_from": "not-a-date"},
+        )
+        assert response.status_code == 422

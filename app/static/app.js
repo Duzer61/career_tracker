@@ -20,6 +20,11 @@ let editingApplicationId = null;
 const savedSort = sessionStorage.getItem('sortAscending');
 let sortAscending = savedSort !== null ? savedSort === 'true' : false; // false = сначала новые (desc), true = сначала старые (asc)
 
+// Filter state
+let filterPeriod = ''; // '', today, week, month, old
+let customDateFrom = '';
+let customDateTo = '';
+
 // Refresh token tracking
 let refreshInProgress = false;
 
@@ -359,6 +364,28 @@ function setupEventListeners() {
         }
     });
 
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const period = btn.dataset.period;
+            setFilterPeriod(period);
+        });
+    });
+
+    // Apply custom range
+    const applyRangeBtn = document.getElementById('apply-range-btn');
+    if (applyRangeBtn) {
+        applyRangeBtn.addEventListener('click', applyCustomRange);
+    }
+
+    // Enter key on date inputs triggers custom range
+    document.getElementById('date-from')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') applyCustomRange();
+    });
+    document.getElementById('date-to')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') applyCustomRange();
+    });
+
     console.log('Event listeners setup complete');
 }
 
@@ -539,29 +566,101 @@ function switchTab(tab) {
     authMessage.style.color = '#e74c3c';
 }
 
+// Filter helpers
+function setFilterPeriod(period) {
+    filterPeriod = period;
+    customDateFrom = '';
+    customDateTo = '';
+
+    // Update active button style
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.period === period);
+    });
+
+    // Clear custom range inputs and remove highlight
+    document.querySelector('.custom-range')?.classList.remove('active');
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+
+    loadApplications();
+}
+
+function applyCustomRange() {
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo = document.getElementById('date-to').value;
+
+    if (!dateFrom && !dateTo) return;
+
+    if (!isValidDateString(dateFrom) || !isValidDateString(dateTo)) {
+        alert('Дата должна содержать четырёхзначный год (от 2000 до 2100)');
+        return;
+    }
+
+    customDateFrom = dateFrom;
+    customDateTo = dateTo;
+    filterPeriod = ''; // сбрасываем предустановленный период
+
+    // Deselect all preset buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Highlight custom range block
+    document.querySelector('.custom-range')?.classList.add('active');
+
+    loadApplications();
+}
+
+function isValidDateString(dateStr) {
+    if (!dateStr) return true;
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return false;
+    const year = parseInt(match[1], 10);
+    return year >= 2000 && year <= 2100;
+}
+
+function buildFilterQuery() {
+    let query = `reverse=${sortAscending}`;
+
+    if (filterPeriod) {
+        query += `&period=${filterPeriod}`;
+    } else if (customDateFrom || customDateTo) {
+        if (customDateFrom) query += `&date_from=${customDateFrom}`;
+        if (customDateTo) query += `&date_to=${customDateTo}`;
+    }
+
+    return query;
+}
+
 // Applications
 async function loadApplications() {
     try {
         console.log('Loading applications...');
-        const response = await authenticatedFetch(`${API_BASE}/applications?reverse=${sortAscending}`);
-        if (!response.ok) throw new Error('Failed to load applications');
+        const filterQuery = buildFilterQuery();
+        const response = await authenticatedFetch(`${API_BASE}/applications?${filterQuery}`);
+        if (!response.ok) {
+            let detail = 'Ошибка загрузки заявок';
+            try {
+                const errData = await response.json();
+                if (errData.detail) detail = errData.detail;
+            } catch (_) {
+                // ignore if body is not JSON
+            }
+            throw new Error(detail);
+        }
         applications = await response.json();
         console.log('Applications loaded:', applications.length);
         renderKanbanBoard();
     } catch (error) {
         console.error('Error loading applications:', error);
-        alert('Ошибка загрузки заявок');
+        alert(error.message || 'Ошибка загрузки заявок');
     }
 }
 
 function toggleSort() {
     sortAscending = !sortAscending;
     sessionStorage.setItem('sortAscending', sortAscending);
-    const sortBtn = document.getElementById('sort-btn');
-    if (sortBtn) {
-        sortBtn.dataset.ascending = sortAscending;
-        sortBtn.textContent = sortAscending ? '⬇ Сначала старые' : '⬆ Сначала новые';
-    }
+    updateSortButton();
     loadApplications();
 }
 
