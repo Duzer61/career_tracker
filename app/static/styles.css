@@ -194,19 +194,26 @@ header h1 {
 
 #search-input {
     width: 100%;
-    padding: 10px 36px 10px 14px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
+    padding: 10px 36px 10px 38px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
     font-size: 15px;
     font-family: inherit;
     color: #333;
-    transition: border-color 0.3s;
-    background: #fff;
+    transition: border-color 0.3s, background 0.3s;
+    background: rgba(102, 126, 234, 0.08);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    background-size: 18px;
+    border-radius: 8px 8px 0 0;
 }
 
 #search-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-bottom-color: #667eea;
+    background: rgba(102, 126, 234, 0.12);
 }
 
 #search-input::placeholder {
@@ -215,21 +222,23 @@ header h1 {
 
 .search-clear-btn {
     position: absolute;
-    right: 8px;
+    right: 6px;
     background: none;
     border: none;
-    font-size: 22px;
+    font-size: 20px;
     color: #999;
     cursor: pointer;
     padding: 4px 8px;
     line-height: 1;
-    transition: color 0.2s;
+    transition: color 0.2s, background 0.2s;
     top: 50%;
     transform: translateY(-50%);
+    border-radius: 50%;
 }
 
 .search-clear-btn:hover {
-    color: #333;
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
 }
 
 .search-clear-btn.hidden {
