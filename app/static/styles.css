@@ -167,6 +167,7 @@ header h1 {
     display: flex;
     gap: 12px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 #add-application-btn {
@@ -177,9 +178,64 @@ header h1 {
 #sort-btn {
     width: auto;
     color: #667eea;
+    flex-shrink: 0;
 }
 
-/* Kanban Board */
+/* Search bar inside controls */
+.search-bar {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 180px;
+    max-width: 400px;
+    position: relative;
+    margin-left: auto;
+}
+
+#search-input {
+    width: 100%;
+    padding: 10px 36px 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #333;
+    transition: border-color 0.3s;
+    background: #fff;
+}
+
+#search-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+#search-input::placeholder {
+    color: #999;
+}
+
+.search-clear-btn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #999;
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+    transition: color 0.2s;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.search-clear-btn:hover {
+    color: #333;
+}
+
+.search-clear-btn.hidden {
+    display: none;
+}
+
 .filter-bar {
     display: flex;
     flex-wrap: wrap;

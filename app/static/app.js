@@ -21,6 +21,8 @@ const savedSort = sessionStorage.getItem('sortAscending');
 let sortAscending = savedSort !== null ? savedSort === 'true' : false; // false = сначала новые (desc), true = сначала старые (asc)
 
 // Filter state
+let searchQuery = '';
+
 let filterPeriod = ''; // '', today, week, month, old
 let customDateFrom = '';
 let customDateTo = '';
@@ -131,6 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     viewModalTitle = document.getElementById('view-modal-title');
     viewModalBody = document.getElementById('view-modal-body');
     closeViewBtn = document.getElementById('close-view-btn');
+    searchInput = document.getElementById('search-input');
+    searchClearBtn = document.getElementById('search-clear-btn');
     
     console.log('Elements initialized:', {
         authContainer: !!authContainer,
@@ -385,6 +389,33 @@ function setupEventListeners() {
     document.getElementById('date-to')?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') applyCustomRange();
     });
+
+    // Search input
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim().toLowerCase();
+            // Показываем/скрываем кнопку очистки
+            if (searchClearBtn) {
+                if (searchQuery) {
+                    searchClearBtn.classList.remove('hidden');
+                } else {
+                    searchClearBtn.classList.add('hidden');
+                }
+            }
+            renderKanbanBoard();
+        });
+    }
+
+    // Search clear button
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', () => {
+            searchQuery = '';
+            searchInput.value = '';
+            searchClearBtn.classList.add('hidden');
+            renderKanbanBoard();
+            searchInput.focus();
+        });
+    }
 
     console.log('Event listeners setup complete');
 }
@@ -765,20 +796,35 @@ async function updateApplicationStatus(applicationId, newStatus) {
     });
 }
 
+// Search helpers
+function matchesSearch(app) {
+    if (!searchQuery) return true;
+    const q = searchQuery;
+    return (
+        (app.company_name && app.company_name.toLowerCase().includes(q)) ||
+        (app.vacancy_name && app.vacancy_name.toLowerCase().includes(q)) ||
+        (app.contacts && app.contacts.toLowerCase().includes(q)) ||
+        (app.comments && app.comments.toLowerCase().includes(q))
+    );
+}
+
 // Kanban Board
 function renderKanbanBoard() {
     const statuses = Object.keys(STATUS_LABELS);
 
+    // Filter applications by search query
+    const filteredApplications = applications.filter(app => matchesSearch(app));
+
     // Clear board
     kanbanBoard.innerHTML = '';
 
-    // Create columns for each status
+    // Create columns for each status (always render all columns)
     statuses.forEach(status => {
+        const columnApps = filteredApplications.filter(app => app.status === status);
+
         const column = document.createElement('div');
         column.className = 'column';
         column.dataset.status = status;
-
-        const columnApps = applications.filter(app => app.status === status);
 
         column.innerHTML = `
             <div class="column-header">
@@ -798,6 +844,7 @@ function renderKanbanBoard() {
         kanbanBoard.appendChild(column);
     });
 }
+
 
 function createCard(app) {
     const card = document.createElement('div');
