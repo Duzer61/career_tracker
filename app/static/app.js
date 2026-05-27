@@ -417,6 +417,15 @@ function setupEventListeners() {
         });
     }
 
+    // Filter toggle button (mobile)
+    const filterToggleBtn = document.getElementById('filter-toggle-btn');
+    const filterBar = document.getElementById('filter-bar');
+    if (filterToggleBtn && filterBar) {
+        filterToggleBtn.addEventListener('click', () => {
+            filterBar.classList.toggle('filter-bar-visible');
+        });
+    }
+
     console.log('Event listeners setup complete');
 }
 

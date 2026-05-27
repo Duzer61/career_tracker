@@ -902,39 +902,273 @@ header h1 {
     user-select: none;
 }
 
-/* Responsive */
+/* Hide filter toggle on desktop */
+@media (min-width: 769px) {
+    .filter-toggle-btn-mobile {
+        display: none !important;
+    }
+}
+
+/* Mobile responsive styles */
 @media (max-width: 768px) {
+    /* ====== HEADER ====== */
+    header {
+        padding: 8px 12px;
+        flex-direction: row;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    header h1 {
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+    }
+
+    .user-info {
+        gap: 6px;
+    }
+
+    #username-display {
+        font-size: 12px;
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #logout-btn {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+
+    /* ====== CONTROLS ====== */
+    .controls {
+        padding: 8px 10px;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    #add-application-btn {
+        padding: 8px 10px;
+        font-size: 0;
+        min-width: 36px;
+        width: auto;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #add-application-btn::before {
+        content: "+";
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    #add-application-btn:hover::after {
+        content: "Заявка";
+        font-size: 13px;
+        margin-left: 4px;
+        font-weight: 600;
+    }
+
+    #sort-btn {
+        padding: 8px 10px;
+        font-size: 18px;
+        min-width: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .search-bar {
+        min-width: 0;
+        flex: 1;
+        max-width: none;
+    }
+
+    #search-input {
+        padding: 6px 30px 6px 32px;
+        font-size: 13px;
+        background-size: 16px;
+        background-position: 8px center;
+        border-radius: 6px 6px 0 0;
+    }
+
+    .search-clear-btn {
+        font-size: 16px;
+        padding: 2px 6px;
+        right: 4px;
+    }
+
+    /* Filter toggle button */
+    .filter-toggle-btn-mobile {
+        display: inline-flex !important;
+        padding: 8px 10px;
+        font-size: 18px;
+        min-width: 36px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ====== FILTER BAR ====== */
+    .filter-bar {
+        display: none !important;
+        margin: 0;
+        padding: 8px 10px;
+        border-radius: 0;
+        flex-shrink: 0;
+    }
+
+    .filter-bar.filter-bar-visible {
+        display: flex !important;
+    }
+
+    .filter-bar .filter-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .filter-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    .custom-range {
+        gap: 4px;
+    }
+
+    .custom-range label {
+        font-size: 11px;
+    }
+
+    .custom-range input[type="date"] {
+        padding: 3px 6px;
+        font-size: 11px;
+        max-width: 110px;
+    }
+
+    .custom-range .btn-secondary {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    /* ====== KANBAN BOARD ====== */
     .kanban-board {
-        padding: 10px;
-        gap: 12px;
+        padding: 6px;
+        gap: 8px;
+        flex: 1;
+        min-height: 0;
     }
 
     .column {
-        flex: 0 0 260px;
-        min-height: 300px;
-        padding: 10px;
+        flex: 0 0 200px;
+        min-height: 0;
+        padding: 8px;
     }
 
-    header {
-        padding: 15px 20px;
-        flex-direction: column;
-        gap: 10px;
+    .column-header {
+        margin-bottom: 8px;
+        padding-bottom: 6px;
     }
 
-    .card {
-        padding: 12px;
-        margin-bottom: 10px;
-    }
-
-    .card-company {
-        font-size: 15px;
-    }
-
-    .card-field {
+    .column-title {
         font-size: 13px;
     }
 
-    .controls {
-        padding: 15px 20px;
+    .column-count {
+        font-size: 11px;
+        padding: 1px 7px;
+    }
+
+    .cards-container {
+        max-height: none;
+    }
+
+    /* ====== CARDS ====== */
+    .card {
+        padding: 8px;
+        margin-bottom: 6px;
+        border-left-width: 3px;
+    }
+
+    .card-header {
+        margin-bottom: 4px;
+    }
+
+    .card-company {
+        font-size: 13px;
+    }
+
+    .card-btn {
+        font-size: 11px;
+        padding: 2px;
+    }
+
+    .card-body {
+        margin-bottom: 4px;
+    }
+
+    .card-field {
+        font-size: 11px;
+        margin-bottom: 4px;
+    }
+
+    .card-field a.vacancy-link {
+        font-size: 11px;
+    }
+
+    .card-comments {
+        max-height: 30px;
+        -webkit-line-clamp: 2;
+    }
+
+    .card-footer {
+        font-size: 10px;
+        padding-top: 4px;
+    }
+
+    /* ====== MODALS ====== */
+    .modal-content {
+        padding: 16px;
+        width: 95%;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+    }
+
+    .view-field-label {
+        font-size: 12px;
+    }
+
+    .view-field-value {
+        font-size: 14px;
+    }
+
+    /* ====== AUTH SCREEN ====== */
+    .auth-box {
+        padding: 20px;
+    }
+
+    .auth-box h2 {
+        font-size: 22px;
+    }
+
+    .auth-box input {
+        padding: 10px;
+        font-size: 14px;
     }
 }
