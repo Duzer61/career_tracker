@@ -253,7 +253,11 @@ header h1 {
     padding: 10px 15px;
     background: #f8f9fa;
     border-radius: 8px;
-    margin: 10px 0;
+    margin-top: 10px;
+}
+
+.filter-bar.filter-bar-collapsed {
+    display: none !important;
 }
 
 .filter-group {
@@ -328,6 +332,7 @@ header h1 {
     scrollbar-width: thin;
     scroll-behavior: smooth;
     cursor: default;
+    margin-top: 10px;
 }
 
 .kanban-board.pan-active {
@@ -902,13 +907,6 @@ header h1 {
     user-select: none;
 }
 
-/* Hide filter toggle on desktop */
-@media (min-width: 769px) {
-    .filter-toggle-btn-mobile {
-        display: none !important;
-    }
-}
-
 /* Mobile responsive styles */
 @media (max-width: 768px) {
     /* ====== HEADER ====== */
@@ -977,9 +975,9 @@ header h1 {
     }
 
     #sort-btn {
-        padding: 8px 10px;
-        font-size: 18px;
-        min-width: 36px;
+        padding: 6px 8px;
+        font-size: 13px;
+        min-width: 30px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1017,15 +1015,14 @@ header h1 {
 
     /* ====== FILTER BAR ====== */
     .filter-bar {
-        display: none !important;
         margin: 0;
         padding: 8px 10px;
         border-radius: 0;
         flex-shrink: 0;
     }
 
-    .filter-bar.filter-bar-visible {
-        display: flex !important;
+    .filter-bar.filter-bar-collapsed {
+        display: none !important;
     }
 
     .filter-bar .filter-group {
@@ -1064,6 +1061,7 @@ header h1 {
         gap: 8px;
         flex: 1;
         min-height: 0;
+        margin-top: 0;
     }
 
     .column {

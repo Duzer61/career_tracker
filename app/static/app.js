@@ -417,12 +417,16 @@ function setupEventListeners() {
         });
     }
 
-    // Filter toggle button (mobile)
+    // Filter toggle button
     const filterToggleBtn = document.getElementById('filter-toggle-btn');
     const filterBar = document.getElementById('filter-bar');
     if (filterToggleBtn && filterBar) {
+        // On mobile, hide filter bar by default; on desktop, show it
+        if (window.innerWidth <= 768) {
+            filterBar.classList.add('filter-bar-collapsed');
+        }
         filterToggleBtn.addEventListener('click', () => {
-            filterBar.classList.toggle('filter-bar-visible');
+            filterBar.classList.toggle('filter-bar-collapsed');
         });
     }
 
