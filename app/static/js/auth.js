@@ -87,18 +87,15 @@ function closeLogoutModal() {
 }
 
 async function handleLogout() {
-    const token = getToken();
-    if (token) {
-        try {
-            await authenticatedFetch(`${API_BASE}/auth/logout`, { method: 'POST' });
-        } catch (err) {
-            // Ignore logout errors
-        }
-    }
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    currentUser = null;
-    applications = [];
     closeLogoutModal();
-    showAuth();
+    try {
+        await fetch(`${API_BASE}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        currentUser = null;
+        showAuth();
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
 }
