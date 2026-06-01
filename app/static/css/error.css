@@ -1,0 +1,45 @@
+/* Error / 404 Page */
+.error-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    padding: 40px;
+}
+
+.error-page h1 {
+    font-size: 72px;
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.error-page h2 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.error-page p {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.error-page .btn-primary {
+    display: inline-block;
+    width: auto;
+    padding: 12px 30px;
+    background: #667eea;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+
+.error-page .btn-primary:hover {
+    background: #5568d3;
+}

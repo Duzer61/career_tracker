@@ -1,0 +1,184 @@
+/* ====== Responsive / Mobile ====== */
+
+@media (max-width: 768px) {
+    /* Header */
+    .app-header {
+        padding: 15px 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .app-header h1 {
+        font-size: 18px;
+    }
+
+    .header-right {
+        gap: 8px;
+    }
+
+    #username-display {
+        font-size: 13px;
+    }
+
+    .logout-btn {
+        padding: 8px 14px;
+        font-size: 12px;
+    }
+
+    /* Toolbar */
+    .toolbar {
+        padding: 15px 20px;
+        gap: 8px;
+    }
+
+    .btn-add {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+
+    /* Filter bar */
+    .filter-bar {
+        padding: 10px 20px;
+        gap: 8px;
+    }
+
+    .filter-btn {
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+
+    .custom-range {
+        gap: 4px;
+    }
+
+    .custom-range label {
+        font-size: 11px;
+    }
+
+    .custom-range input[type="date"] {
+        padding: 4px 6px;
+        font-size: 11px;
+        max-width: 110px;
+    }
+
+    .custom-range .btn-secondary {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+
+    /* Kanban Board */
+    .kanban-board {
+        padding: 6px;
+        gap: 8px;
+        flex: 1;
+        min-height: 0;
+        margin-top: 0;
+    }
+
+    .column {
+        flex: 0 0 200px;
+        min-height: 0;
+        padding: 8px;
+    }
+
+    .column-header {
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+    }
+
+    .column-title {
+        font-size: 13px;
+    }
+
+    .column-count {
+        font-size: 11px;
+        padding: 1px 7px;
+    }
+
+    .cards-container {
+        max-height: none;
+    }
+
+    /* Cards */
+    .card {
+        padding: 8px;
+        margin-bottom: 6px;
+        border-left-width: 3px;
+    }
+
+    .card-header {
+        margin-bottom: 4px;
+    }
+
+    .card-company {
+        font-size: 13px;
+    }
+
+    .card-btn {
+        font-size: 11px;
+        padding: 2px;
+    }
+
+    .card-body {
+        margin-bottom: 4px;
+    }
+
+    .card-field {
+        font-size: 11px;
+        margin-bottom: 4px;
+    }
+
+    .card-field a.vacancy-link {
+        font-size: 11px;
+    }
+
+    .card-comments {
+        max-height: 30px;
+        -webkit-line-clamp: 2;
+    }
+
+    .card-footer {
+        font-size: 10px;
+        padding-top: 4px;
+    }
+
+    /* Main content */
+    .main-content {
+        padding: 0 6px;
+    }
+
+    .search-wrapper {
+        max-width: 100%;
+        order: 10;
+        flex-basis: 100%;
+    }
+
+    #search-input {
+        padding: 10px 36px 10px 14px;
+        background-image: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .column {
+        flex: 0 0 168px;
+    }
+
+    .card {
+        padding: 6px;
+    }
+
+    .card-company {
+        font-size: 12px;
+    }
+
+    .card-actions {
+        gap: 2px;
+    }
+
+    .card-btn {
+        font-size: 10px;
+        padding: 2px;
+    }
+}
