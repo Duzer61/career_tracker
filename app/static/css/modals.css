@@ -363,21 +363,22 @@
 /* Increased spacing for confirmation modal headings */
 #logout-modal .modal-header h2,
 #delete-modal .modal-header h2 {
-    margin-bottom: 25px;
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 0;
 }
 
 /* Logout & Delete modal extra spacing */
 .logout-modal-body,
 .delete-modal-body {
-    text-align: center;
-    font-size: 16px;
+    font-size: 18px;
     color: #333;
 }
 
 .warning {
-    font-size: 13px;
+    font-size: 15px;
     color: #e74c3c;
-    margin-top: 10px;
+    margin-top: 16px;
 }
 
 /* Responsive */
