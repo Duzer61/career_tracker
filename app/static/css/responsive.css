@@ -149,14 +149,24 @@
     }
 
     .search-wrapper {
-        max-width: 100%;
-        order: 10;
-        flex-basis: 100%;
+        min-width: 0;
+        flex: 1;
+        max-width: none;
     }
 
     #search-input {
         padding: 10px 36px 10px 14px;
         background-image: none;
+    }
+
+    /* Filter toggle button */
+    .filter-toggle-btn {
+        display: inline-flex !important;
+        padding: 8px 10px;
+        font-size: 18px;
+        min-width: 36px;
+        align-items: center;
+        justify-content: center;
     }
 }
 

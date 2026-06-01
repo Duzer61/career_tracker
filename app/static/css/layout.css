@@ -255,34 +255,20 @@
     flex-direction: column;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .app-header {
-        padding: 15px 20px;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
+/* Filter Toggle Button */
+.filter-toggle-btn {
+    padding: 10px 20px;
+    background: #f0f0f0;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+    flex-shrink: 0;
+}
 
-    .toolbar {
-        padding: 15px 20px;
-    }
-
-    .filter-bar {
-        padding: 10px 20px;
-    }
-
-    .main-content {
-        padding: 0 6px;
-    }
-
-    .search-wrapper {
-        max-width: 100%;
-        order: 10;
-        flex-basis: 100%;
-    }
-
-    #search-input {
-        padding: 10px 36px 10px 14px;
-        background-image: none;
-    }
+.filter-toggle-btn:hover {
+    background: #e0e0e0;
 }
