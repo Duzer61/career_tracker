@@ -32,15 +32,31 @@
     }
 
     .btn-add {
-        padding: 10px 16px;
-        font-size: 14px;
+        padding: 10px 12px;
+        font-size: 0;
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-add::before {
+        content: "+";
+        font-size: 22px;
+        font-weight: 700;
     }
 
 
     /* Filter bar */
     .filter-bar {
+        display: none !important;
         padding: 10px 20px;
         gap: 8px;
+    }
+
+    .filter-bar.filter-bar-expanded {
+        display: flex !important;
     }
 
     .filter-btn {

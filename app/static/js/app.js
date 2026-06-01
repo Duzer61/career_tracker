@@ -66,10 +66,15 @@ function setupEventListeners() {
         });
     }
 
-    // Filter toggle (mobile)
+    // Filter toggle
     if (filterToggleBtn) {
         filterToggleBtn.addEventListener('click', () => {
-            if (filterBar) filterBar.classList.toggle('filter-bar-collapsed');
+            if (!filterBar) return;
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                filterBar.classList.toggle('filter-bar-expanded');
+            } else {
+                filterBar.classList.toggle('filter-bar-collapsed');
+            }
         });
     }
 
