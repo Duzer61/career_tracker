@@ -77,7 +77,9 @@
     }
 
     .column {
-        flex: 0 0 200px;
+        flex: 0 0 auto;
+        min-width: 179px;
+        max-width: 223px;
         min-height: 0;
         padding: 8px;
     }
@@ -172,7 +174,9 @@
 
 @media (max-width: 480px) {
     .column {
-        flex: 0 0 168px;
+        flex: 0 0 auto;
+        min-width: 150px;
+        max-width: 187px;
     }
 
     .card {
