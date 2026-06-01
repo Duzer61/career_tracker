@@ -47,6 +47,26 @@
         font-weight: 700;
     }
 
+    #sort-btn {
+        font-size: 0;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    #sort-btn[data-ascending="true"]::before {
+        content: "⬇";
+        font-size: 18px;
+    }
+
+    #sort-btn[data-ascending="false"]::before {
+        content: "⬆";
+        font-size: 18px;
+    }
 
     /* Filter bar */
     .filter-bar {
@@ -170,6 +190,7 @@
         min-width: 0;
         flex: 1;
         max-width: none;
+        margin-left: 0;
     }
 
     #search-input {
