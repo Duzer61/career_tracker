@@ -6,6 +6,13 @@ const FIELD_LABELS = {
     comments: 'Комментарии',
 };
 
+const MAX_LENGTHS = {
+    company_name: 255,
+    vacancy_name: 255,
+    contacts: 500,
+    vacancy_url: 500,
+};
+
 // Utility: extract user-friendly error message from API response
 function extractErrorMessage(data) {
     if (typeof data.detail === 'string') {
@@ -63,36 +70,20 @@ async function handleApplicationSubmit(e) {
     const contacts = document.getElementById('contacts').value.trim();
     const comments = document.getElementById('comments').value.trim();
     const status = document.getElementById('status').value;
-
-    const MAX_LENGTHS = {
-        company_name: 255,
-        vacancy_name: 255,
-        contacts: 500,
-        vacancy_url: 500,
-    };
-
-    const FIELD_LABELS = {
-        company_name: 'Компания',
-        vacancy_name: 'Вакансия',
-        contacts: 'Контакты',
-        vacancy_url: 'Ссылка на вакансию',
-        comments: 'Комментарии',
-    };
-
     if (companyName.length > MAX_LENGTHS.company_name) {
-        alert(`Компания: длина не должна превышать ${MAX_LENGTHS.company_name} символов`);
+        alert(`${FIELD_LABELS.company_name}: длина не должна превышать ${MAX_LENGTHS.company_name} символов`);
         return;
     }
     if (vacancyName.length > MAX_LENGTHS.vacancy_name) {
-        alert(`Вакансия: длина не должна превышать ${MAX_LENGTHS.vacancy_name} символов`);
+        alert(`${FIELD_LABELS.vacancy_name}: длина не должна превышать ${MAX_LENGTHS.vacancy_name} символов`);
         return;
     }
     if (contacts && contacts.length > MAX_LENGTHS.contacts) {
-        alert(`Контакты: длина не должна превышать ${MAX_LENGTHS.contacts} символов`);
+        alert(`${FIELD_LABELS.contacts}: длина не должна превышать ${MAX_LENGTHS.contacts} символов`);
         return;
     }
     if (vacancyUrl && vacancyUrl.length > MAX_LENGTHS.vacancy_url) {
-        alert(`Ссылка на вакансию: длина не должна превышать ${MAX_LENGTHS.vacancy_url} символов`);
+        alert(`${FIELD_LABELS.vacancy_url}: длина не должна превышать ${MAX_LENGTHS.vacancy_url} символов`);
         return;
     }
 
