@@ -73,9 +73,9 @@ class ApplicationResponse(BaseModel):
 class ApplicationCreate(BaseModel):
     company_name: str = Field(..., min_length=1, max_length=255)
     vacancy_name: str = Field(..., min_length=1, max_length=255)
-    contacts: str | None = None
+    contacts: str | None = Field(None, max_length=500)
     comments: str | None = None
-    vacancy_url: str | None = None
+    vacancy_url: str | None = Field(None, max_length=500)
 
 
 class ApplicationStatusHistoryResponse(BaseModel):
@@ -89,4 +89,6 @@ class ApplicationStatusHistoryResponse(BaseModel):
 class ApplicationUpdate(ApplicationCreate):
     company_name: str | None = Field(None, min_length=1, max_length=255)
     vacancy_name: str | None = Field(None, min_length=1, max_length=255)
+    contacts: str | None = Field(None, max_length=500)
+    vacancy_url: str | None = Field(None, max_length=500)
     status: ApplicationStatus | None = None

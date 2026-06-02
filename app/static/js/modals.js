@@ -1,3 +1,26 @@
+const FIELD_LABELS = {
+    company_name: 'Компания',
+    vacancy_name: 'Вакансия',
+    contacts: 'Контакты',
+    vacancy_url: 'Ссылка на вакансию',
+    comments: 'Комментарии',
+};
+
+// Utility: extract user-friendly error message from API response
+function extractErrorMessage(data) {
+    if (typeof data.detail === 'string') {
+        return data.detail;
+    }
+    if (Array.isArray(data.detail) && data.detail.length > 0) {
+        const first = data.detail[0];
+        const rawField = first.loc?.length > 1 ? first.loc[1] : '';
+        const field = FIELD_LABELS[rawField] || rawField;
+        const msg = first.msg || 'Ошибка валидации';
+        return field ? `${field}: ${msg}` : msg;
+    }
+    return data.detail?.message || 'Ошибка сохранения';
+}
+
 // Modal logic and status history
 // Modal references are initialized in app.js initDomRefs()
 
@@ -41,6 +64,38 @@ async function handleApplicationSubmit(e) {
     const comments = document.getElementById('comments').value.trim();
     const status = document.getElementById('status').value;
 
+    const MAX_LENGTHS = {
+        company_name: 255,
+        vacancy_name: 255,
+        contacts: 500,
+        vacancy_url: 500,
+    };
+
+    const FIELD_LABELS = {
+        company_name: 'Компания',
+        vacancy_name: 'Вакансия',
+        contacts: 'Контакты',
+        vacancy_url: 'Ссылка на вакансию',
+        comments: 'Комментарии',
+    };
+
+    if (companyName.length > MAX_LENGTHS.company_name) {
+        alert(`Компания: длина не должна превышать ${MAX_LENGTHS.company_name} символов`);
+        return;
+    }
+    if (vacancyName.length > MAX_LENGTHS.vacancy_name) {
+        alert(`Вакансия: длина не должна превышать ${MAX_LENGTHS.vacancy_name} символов`);
+        return;
+    }
+    if (contacts && contacts.length > MAX_LENGTHS.contacts) {
+        alert(`Контакты: длина не должна превышать ${MAX_LENGTHS.contacts} символов`);
+        return;
+    }
+    if (vacancyUrl && vacancyUrl.length > MAX_LENGTHS.vacancy_url) {
+        alert(`Ссылка на вакансию: длина не должна превышать ${MAX_LENGTHS.vacancy_url} символов`);
+        return;
+    }
+
     const body = {
         company_name: companyName,
         vacancy_name: vacancyName,
@@ -71,10 +126,7 @@ async function handleApplicationSubmit(e) {
             await loadApplications();
         } else {
             const data = await response.json();
-            const detail = typeof data.detail === 'string'
-                ? data.detail
-                : (data.detail?.message || 'Ошибка сохранения');
-            alert(detail);
+            alert(extractErrorMessage(data));
         }
     } catch (err) {
         alert('Ошибка подключения');
@@ -182,10 +234,7 @@ async function deleteApplication(applicationId) {
             renderKanbanBoard();
         } else {
             const data = await response.json();
-            const detail = typeof data.detail === 'string'
-                ? data.detail
-                : (data.detail?.message || 'Ошибка удаления');
-            alert(detail);
+            alert(extractErrorMessage(data));
         }
     } catch (err) {
         alert('Ошибка подключения');
@@ -281,10 +330,7 @@ async function deleteHistoryEntry(applicationId, historyId) {
             await loadStatusHistory(applicationId);
         } else {
             const data = await response.json();
-            const detail = typeof data.detail === 'string'
-                ? data.detail
-                : (data.detail?.message || 'Ошибка удаления');
-            errorEl.textContent = detail;
+            errorEl.textContent = extractErrorMessage(data);
             errorEl.style.display = 'block';
         }
     } catch (err) {
