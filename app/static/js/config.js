@@ -5,7 +5,7 @@ const API_BASE = '/api';
 const STATUS_LABELS = {
     created: 'Отклик',
     hr_interview: 'HR собеседование',
-    tech_interview: 'Техническое собеседование',
+    tech_interview: 'Тех. собеседование',
     offer: 'Оффер',
     auto_reject: 'Автоотказ',
     rejected: 'Отказ',
