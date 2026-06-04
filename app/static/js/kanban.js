@@ -7,6 +7,9 @@ function renderKanbanBoard() {
     // Filter applications by search query
     const filteredApplications = applications.filter(app => matchesSearch(app));
 
+    // Update visible count
+    document.getElementById('visible-count').textContent = filteredApplications.length;
+
     // Clear board
     board.innerHTML = '';
 

@@ -187,11 +187,23 @@
     border-color: #0969da;
 }
 
+/* Visible count badge */
+.visible-count {
+    background: #667eea;
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-block;
+}
+
 /* Filter Group */
 .filter-group {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 /* Custom Date Range */
