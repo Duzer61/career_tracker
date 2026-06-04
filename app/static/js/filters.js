@@ -47,6 +47,13 @@ function matchPeriod(app) {
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             return appDate >= today;
         }
+        case 'yesterday': {
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const startOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+            const endOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
+            return appDate >= startOfYesterday && appDate <= endOfYesterday;
+        }
         case 'week': {
             const weekAgo = new Date(now);
             weekAgo.setDate(weekAgo.getDate() - 7);

@@ -39,6 +39,9 @@ def parse_date_filters(
         period = period.strip().lower()
         if period == "today":
             date_from_dt = start_of_day(now)
+        elif period == "yesterday":
+            date_from_dt = start_of_day(now) - timedelta(days=1)
+            date_to_dt = end_of_day(now - timedelta(days=1))
         elif period == "week":
             date_from_dt = start_of_day(now) - timedelta(days=7)
         elif period == "month":
@@ -49,7 +52,7 @@ def parse_date_filters(
         else:
             raise HTTPException(
                 status_code=422,
-                detail=f"Неизвестный период: '{period}'. Допустимые: today, week, month, old",
+                detail=f"Неизвестный период: '{period}'. Допустимые: today, yesterday, week, month, old",
             )
     else:
         # Если нет period, пробуем распарсить date_from / date_to

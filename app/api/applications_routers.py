@@ -29,7 +29,7 @@ async def get_applications_endpoint(
     reverse: bool = False,
     period: str | None = Query(
         None,
-        description="Предустановленный период: today, week, month, old",
+        description="Предустановленный период: today, yesterday, week, month, old",
     ),
     date_from: str | None = Query(
         None,
@@ -44,7 +44,7 @@ async def get_applications_endpoint(
     """
     Get all applications for current user. Supports date filtering.
 
-    - **period**: today / week / month / old
+    - **period**: today / yesterday / week / month / old
     - **date_from** / **date_to**: кастомный интервал (используется если period не задан)
     """
     now = utc_now()

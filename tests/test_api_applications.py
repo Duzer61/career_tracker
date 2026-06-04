@@ -375,6 +375,25 @@ class TestApplicationsAPI:
         assert len(data) == 1
         assert data[0]["company_name"] == "Today Corp"
 
+    async def test_filter_period_yesterday(self, client, test_session):
+        """period=yesterday returns only yesterday's applications."""
+        await self._setup_user(client)
+
+        # Create an application "today"
+        await self._create_app(client, "Today Corp")
+
+        # Create an application "yesterday"
+        resp2 = await self._create_app(client, "Yesterday Corp")
+        app2_id = resp2.json()["id"]
+        yesterday = utc_now() - timedelta(days=1)
+        await self._set_app_created_at(test_session, app2_id, yesterday)
+
+        response = await client.get(self.APP_URL, params={"period": "yesterday"})
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["company_name"] == "Yesterday Corp"
+
     async def test_filter_period_week(self, client, test_session):
         """period=week returns applications from the last 7 days."""
         await self._setup_user(client)
