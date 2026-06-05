@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Query, status
 
 from app.auth import get_current_user
+from app.config import config as cf
 from app.crud import (
+    auto_ignore_old_applications,
     create_application,
     delete_application,
     delete_status_history_entry,
@@ -120,6 +122,19 @@ async def get_application_status_history_endpoint(
     """
     history = await get_application_status_history(application_id, db, current_user)
     return history
+
+
+@router.post("/auto-ignore")
+async def auto_ignore_applications_endpoint(
+    db: SessionDep,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Move all CREATED applications older than AUTO_IGNORE_DAYS
+    to IGNORED status for the current user.
+    """
+    ignored_count = await auto_ignore_old_applications(db, current_user, cf.AUTO_IGNORE_DAYS)
+    return {"ignored_count": ignored_count}
 
 
 @router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)

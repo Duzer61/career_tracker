@@ -28,6 +28,7 @@ class Config:
     DEFAULT_TOKEN_LIFETIME: int = 30  # minutes
     MAX_LOGIN_ATTEMPTS: int = 5  # max attempts in time window
     WINDOW_LOGIN_ATTEMPTS: int = 300  # seconds
+    AUTO_IGNORE_DAYS: int = 30  # days after which created applications are auto-ignored
 
 
 def get_bool(value: str | None) -> bool:

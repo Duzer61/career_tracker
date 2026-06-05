@@ -509,3 +509,81 @@ class TestApplicationsAPI:
             params={"date_from": "not-a-date"},
         )
         assert response.status_code == 422
+
+    # ── Auto-Ignore ───────────────────────────
+
+    async def test_auto_ignore_ignores_old_created_applications(self, client, test_session):
+        """
+        POST /api/applications/auto-ignore should move CREATED applications
+        older than AUTO_IGNORE_DAYS to IGNORED.
+        """
+        await self._setup_user(client)
+
+        # Create an application "now" (should NOT be ignored)
+        resp_recent = await self._create_app(client, "Recent Corp")
+        recent_id = resp_recent.json()["id"]
+
+        # Create an application older than AUTO_IGNORE_DAYS (should be ignored)
+        resp_old = await self._create_app(client, "Old Corp")
+        old_id = resp_old.json()["id"]
+        old_date = utc_now() - timedelta(days=31)
+        await self._set_app_created_at(test_session, old_id, old_date)
+
+        # Create an application with non-CREATED status (should NOT be ignored)
+        resp_non_created = await self._create_app(client, "Offer Corp")
+        non_created_id = resp_non_created.json()["id"]
+        old_date2 = utc_now() - timedelta(days=31)
+        await self._set_app_created_at(test_session, non_created_id, old_date2)
+        await client.patch(
+            f"{self.APP_URL}/{non_created_id}",
+            json={"status": "offer"},
+        )
+
+        response = await client.post(f"{self.APP_URL}/auto-ignore")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ignored_count"] == 1
+
+        # Check old CREATED app is now IGNORED
+        old_app = await client.get(f"{self.APP_URL}/{old_id}")
+        assert old_app.json()["status"] == "ignored"
+
+        # Check recent app is still CREATED
+        recent_app = await client.get(f"{self.APP_URL}/{recent_id}")
+        assert recent_app.json()["status"] == "created"
+
+        # Check non-CREATED app is still offer
+        non_created_app = await client.get(f"{self.APP_URL}/{non_created_id}")
+        assert non_created_app.json()["status"] == "offer"
+
+    async def test_auto_ignore_no_old_applications(self, client):
+        """Should return 0 when there are no old CREATED applications."""
+        await self._setup_user(client)
+        await self._create_app(client, "Recent Corp")
+
+        response = await client.post(f"{self.APP_URL}/auto-ignore")
+        assert response.status_code == 200
+        assert response.json()["ignored_count"] == 0
+
+    async def test_auto_ignore_only_strictly_older(self, client, test_session):
+        """
+        Should ignore only applications STRICTLY older than AUTO_IGNORE_DAYS.
+        Applications created just now should NOT be ignored.
+        """
+        await self._setup_user(client)
+
+        # Application created just now (should NOT be ignored)
+        resp_recent = await self._create_app(client, "Recent Corp")
+        recent_id = resp_recent.json()["id"]
+
+        response = await client.post(f"{self.APP_URL}/auto-ignore")
+        assert response.status_code == 200
+        assert response.json()["ignored_count"] == 0
+
+        recent_app = await client.get(f"{self.APP_URL}/{recent_id}")
+        assert recent_app.json()["status"] == "created"
+
+    async def test_auto_ignore_unauthorized(self, client):
+        """Should return 401 without auth."""
+        response = await client.post(f"{self.APP_URL}/auto-ignore")
+        assert response.status_code == 401

@@ -1,13 +1,16 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import asc, desc, select
+from sqlalchemy import update as sqlalchemy_update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_password_hash
 from app.db.models import Application, ApplicationStatus, ApplicationStatusHistory, User
 from app.schemas import ApplicationCreate, ApplicationUpdate, UserCreate
+from app.utils import utc_now
 
 # User crud
 
@@ -228,6 +231,55 @@ async def delete_status_history_entry(
     except SQLAlchemyError as e:
         await db.rollback()
         raise ValueError(f"Error deleting status history entry: {e}")
+
+
+async def auto_ignore_old_applications(db: AsyncSession, current_user: User, days: int) -> int:
+    """
+    Move all CREATED applications older than the specified number of days
+    to IGNORED status for the current user.
+
+    Uses bulk UPDATE and INSERT operations.
+    Returns the number of affected applications.
+    """
+    cutoff_date = utc_now() - timedelta(days=days)
+
+    result = await db.scalars(
+        select(Application.id).where(
+            Application.user_id == current_user.id,
+            Application.status == ApplicationStatus.CREATED,
+            Application.created_at < cutoff_date,
+        )
+    )
+    app_ids = result.all()
+
+    if not app_ids:
+        return 0
+
+    now = utc_now()
+
+    try:
+        await db.execute(
+            sqlalchemy_update(Application)
+            .where(Application.id.in_(app_ids))
+            .values(status=ApplicationStatus.IGNORED, updated_at=now)
+        )
+
+        history_values = [
+            {
+                "application_id": app_id,
+                "status": ApplicationStatus.IGNORED,
+                "changed_at": now,
+            }
+            for app_id in app_ids
+        ]
+        await db.execute(pg_insert(ApplicationStatusHistory), history_values)
+
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise ValueError(f"Error auto-ignoring applications: {e}")
+
+    return len(app_ids)
 
 
 async def delete_application(application_id: int, db: AsyncSession, current_user: User) -> None:

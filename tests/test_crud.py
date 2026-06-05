@@ -1,8 +1,13 @@
 """Tests for CRUD operations (direct DB calls)."""
 
-import pytest
+from datetime import timedelta
 
+import pytest
+from fastapi import HTTPException
+
+from app.auth import get_password_hash
 from app.crud import (
+    auto_ignore_old_applications,
     create_application,
     create_user,
     delete_application,
@@ -10,8 +15,9 @@ from app.crud import (
     get_applications,
     update_application,
 )
-from app.db.models import ApplicationStatus
+from app.db.models import ApplicationStatus, User
 from app.schemas import ApplicationCreate, ApplicationUpdate, UserCreate
+from app.utils import utc_now
 
 
 class TestUserCRUD:
@@ -110,8 +116,6 @@ class TestApplicationCRUD:
 
     async def test_get_application_not_found(self, test_session, test_user):
         """Should return None for non-existent ID."""
-        from fastapi import HTTPException
-
         with pytest.raises(HTTPException):
             await get_application(9999, test_session, test_user)
 
@@ -156,8 +160,6 @@ class TestApplicationCRUD:
         )
         await delete_application(created.id, test_session, test_user)
 
-        from fastapi import HTTPException
-
         with pytest.raises(HTTPException):
             await get_application(created.id, test_session, test_user)
 
@@ -169,9 +171,6 @@ class TestApplicationCRUD:
             test_user,
         )
         # Create another user and check their list is empty
-        from app.auth import get_password_hash
-        from app.db.models import User
-
         other = User(login="otheruser", hashed_password=get_password_hash("StrongPass1"))
         test_session.add(other)
         await test_session.commit()
@@ -179,3 +178,67 @@ class TestApplicationCRUD:
 
         apps = await get_applications(test_session, False, other)
         assert apps == []
+
+    # ── Auto-Ignore ───────────────────────────
+
+    async def test_auto_ignore_old_created_applications(self, test_session, test_user):
+        """Should ignore CREATED applications older than the specified days."""
+        # Create old CREATED application (> 30 days)
+        old_app = await create_application(
+            ApplicationCreate(company_name="Old Corp", vacancy_name="Old Role"),
+            test_session,
+            test_user,
+        )
+        old_app.created_at = utc_now() - timedelta(days=31)
+
+        # Create recent CREATED application
+        recent_app = await create_application(
+            ApplicationCreate(company_name="Recent Corp", vacancy_name="Recent Role"),
+            test_session,
+            test_user,
+        )
+
+        # Create old non-CREATED application
+        offer_app = await create_application(
+            ApplicationCreate(company_name="Offer Corp", vacancy_name="Offer Role"),
+            test_session,
+            test_user,
+        )
+        await test_session.refresh(offer_app)
+        offer_app.created_at = utc_now() - timedelta(days=31)
+        offer_app.status = ApplicationStatus.OFFER
+
+        await test_session.commit()
+
+        ignored = await auto_ignore_old_applications(test_session, test_user, 30)
+        assert ignored == 1
+
+        # Refresh and check statuses
+        await test_session.refresh(old_app)
+        assert old_app.status == ApplicationStatus.IGNORED
+
+        await test_session.refresh(recent_app)
+        assert recent_app.status == ApplicationStatus.CREATED
+
+        await test_session.refresh(offer_app)
+        assert offer_app.status == ApplicationStatus.OFFER
+
+    async def test_auto_ignore_strictly_older_check(self, test_session, test_user):
+        """Should not ignore recently created applications (not strictly older)."""
+        recent_app = await create_application(
+            ApplicationCreate(company_name="Recent Corp", vacancy_name="Recent Role"),
+            test_session,
+            test_user,
+        )
+        # Don't touch created_at — it's "now"
+
+        ignored = await auto_ignore_old_applications(test_session, test_user, 30)
+        assert ignored == 0
+
+        await test_session.refresh(recent_app)
+        assert recent_app.status == ApplicationStatus.CREATED
+
+    async def test_auto_ignore_no_applications(self, test_session, test_user):
+        """Should return 0 when there are no old CREATED applications."""
+        ignored = await auto_ignore_old_applications(test_session, test_user, 30)
+        assert ignored == 0
