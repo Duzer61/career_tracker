@@ -78,7 +78,8 @@
     background: #5568d3;
 }
 
-#sort-btn {
+#sort-btn,
+#more-actions-btn {
     width: auto;
     color: #667eea;
     flex-shrink: 0;
@@ -319,12 +320,14 @@
     font-family: inherit;
     text-align: left;
     cursor: pointer;
-    color: #24292f;
+    color: #333;
+    font-weight: 600;
     transition: background 0.15s;
 }
 
 .dropdown-menu button:hover {
     background: #f6f8fa;
+    border-radius: 6px;
 }
 
 /* Toast notification */
@@ -332,12 +335,12 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    min-width: 260px;
-    max-width: 400px;
-    padding: 14px 20px;
+    min-width: 300px;
+    max-width: 440px;
+    padding: 16px 24px;
     border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 16px;
+    font-weight: 600;
     color: #fff;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     z-index: 2000;
@@ -352,6 +355,10 @@
 
 .toast--error {
     background: #c62828;
+}
+
+.toast--warning {
+    background: #e67e22;
 }
 
 @keyframes toast-in {

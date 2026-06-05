@@ -368,9 +368,21 @@
     margin-bottom: 0;
 }
 
-/* Logout & Delete modal extra spacing */
+/* Auto-ignore modal: match other confirmation modals */
+#auto-ignore-modal .modal-header h2 {
+    color: #333;
+    font-size: 24px;
+}
+
+.auto-ignore-modal-body {
+    font-size: 18px;
+    color: #333;
+}
+
+/* Logout, Delete & Auto-ignore modal extra spacing */
 .logout-modal-body,
-.delete-modal-body {
+.delete-modal-body,
+.auto-ignore-modal-body {
     font-size: 18px;
     color: #333;
 }

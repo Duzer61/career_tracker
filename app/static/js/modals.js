@@ -349,7 +349,11 @@ async function handleAutoIgnore() {
         const data = await autoIgnoreApplications();
         closeAutoIgnoreModal();
         const count = data.ignored_count || 0;
-        showToast(`${count} откликов перенесено в игнор`, 'success');
+        if (count > 0) {
+            showToast(`${count} откликов перенесено в игнор`, 'success');
+        } else {
+            showToast('Нет откликов для переноса', 'warning');
+        }
         await loadApplications();
     } catch (error) {
         closeAutoIgnoreModal();
