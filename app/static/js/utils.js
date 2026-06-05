@@ -26,3 +26,15 @@ function formatDateTime(dateString) {
         minute: '2-digit'
     });
 }
+
+function pluralizeRussian(n) {
+    const mod100 = Math.abs(n) % 100;
+    if (mod100 > 10 && mod100 < 20) return `${n} откликов перенесено`;
+    switch (mod100 % 10) {
+        case 1: return `${n} отклик перенесен`;
+        case 2:
+        case 3:
+        case 4: return `${n} отклика перенесено`;
+        default: return `${n} откликов перенесено`;
+    }
+}

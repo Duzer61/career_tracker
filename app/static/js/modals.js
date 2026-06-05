@@ -350,7 +350,7 @@ async function handleAutoIgnore() {
         closeAutoIgnoreModal();
         const count = data.ignored_count || 0;
         if (count > 0) {
-            showToast(`${count} откликов перенесено в игнор`, 'success');
+            showToast(pluralizeRussian(count) + ' в игнор', 'success');
         } else {
             showToast('Нет откликов для переноса', 'warning');
         }
