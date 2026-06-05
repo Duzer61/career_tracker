@@ -64,3 +64,14 @@ async function authenticatedFetch(url, options = {}) {
 
     return response;
 }
+
+async function autoIgnoreApplications() {
+    const response = await authenticatedFetch(`${API_BASE}/applications/auto-ignore`, {
+        method: 'POST',
+    });
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || 'Ошибка при переносе откликов');
+    }
+    return response.json();
+}

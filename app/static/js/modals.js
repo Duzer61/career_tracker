@@ -329,3 +329,33 @@ async function deleteHistoryEntry(applicationId, historyId) {
         errorEl.style.display = 'block';
     }
 }
+
+// ====== Auto-Ignore ======
+
+function openAutoIgnoreModal() {
+    if (autoIgnoreModal) autoIgnoreModal.classList.remove('hidden');
+}
+
+function closeAutoIgnoreModal() {
+    if (autoIgnoreModal) autoIgnoreModal.classList.add('hidden');
+}
+
+async function handleAutoIgnore() {
+    if (!confirmAutoIgnoreBtn) return;
+    confirmAutoIgnoreBtn.disabled = true;
+    confirmAutoIgnoreBtn.textContent = 'Перенос...';
+
+    try {
+        const data = await autoIgnoreApplications();
+        closeAutoIgnoreModal();
+        const count = data.ignored_count || 0;
+        showToast(`${count} откликов перенесено в игнор`, 'success');
+        await loadApplications();
+    } catch (error) {
+        closeAutoIgnoreModal();
+        showToast(error.message, 'error');
+    } finally {
+        confirmAutoIgnoreBtn.disabled = false;
+        confirmAutoIgnoreBtn.textContent = 'Перенести';
+    }
+}

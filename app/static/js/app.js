@@ -6,6 +6,8 @@ let logoutBtn, cancelBtn, closeViewBtn, cancelDeleteBtn, confirmDeleteBtn;
 let cancelLogoutBtn, confirmLogoutBtn, applicationForm, loginForm, registerForm, applyRangeBtn;
 let applicationModal, viewModal, deleteModal;
 let kanbanBoard;
+let moreActionsBtn, moreActionsMenu, autoIgnoreBtn;
+let autoIgnoreModal, cancelAutoIgnoreBtn, confirmAutoIgnoreBtn;
 
 function initDomRefs() {
     addApplicationBtn = document.getElementById('add-application-btn');
@@ -30,6 +32,12 @@ function initDomRefs() {
     viewModal = document.getElementById('view-modal');
     deleteModal = document.getElementById('delete-modal');
     kanbanBoard = document.getElementById('kanban-board');
+    moreActionsBtn = document.getElementById('more-actions-btn');
+    moreActionsMenu = document.getElementById('more-actions-menu');
+    autoIgnoreBtn = document.getElementById('auto-ignore-btn');
+    autoIgnoreModal = document.getElementById('auto-ignore-modal');
+    cancelAutoIgnoreBtn = document.getElementById('cancel-auto-ignore-btn');
+    confirmAutoIgnoreBtn = document.getElementById('confirm-auto-ignore-btn');
 }
 
 function setupEventListeners() {
@@ -102,6 +110,7 @@ function setupEventListeners() {
             closeViewModal();
             closeDeleteModal();
             closeLogoutModal();
+            closeAutoIgnoreModal();
         });
     });
 
@@ -229,6 +238,35 @@ function setupEventListeners() {
     // Drag and drop
     setupDragAndDrop();
 
+    // More actions dropdown
+    if (moreActionsBtn) {
+        moreActionsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            moreActionsMenu.classList.toggle('hidden');
+        });
+    }
+
+    // Close dropdown on click outside
+    document.addEventListener('click', () => {
+        if (moreActionsMenu && !moreActionsMenu.classList.contains('hidden')) {
+            moreActionsMenu.classList.add('hidden');
+        }
+    });
+
+    // Auto-ignore
+    if (autoIgnoreBtn) {
+        autoIgnoreBtn.addEventListener('click', () => {
+            moreActionsMenu.classList.add('hidden');
+            openAutoIgnoreModal();
+        });
+    }
+    if (cancelAutoIgnoreBtn) {
+        cancelAutoIgnoreBtn.addEventListener('click', closeAutoIgnoreModal);
+    }
+    if (confirmAutoIgnoreBtn) {
+        confirmAutoIgnoreBtn.addEventListener('click', handleAutoIgnore);
+    }
+
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         // Close modals on Escape
@@ -237,6 +275,7 @@ function setupEventListeners() {
             closeViewModal();
             closeDeleteModal();
             closeLogoutModal();
+            closeAutoIgnoreModal();
         }
 
         // Enter to confirm logout
@@ -246,6 +285,7 @@ function setupEventListeners() {
         }
     });
 }
+
 
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {

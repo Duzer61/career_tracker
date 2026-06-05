@@ -82,6 +82,12 @@
                 <button id="search-clear-btn" class="search-clear-btn hidden">&times;</button>
             </div>
             <button id="filter-toggle-btn" class="filter-toggle-btn" title="Фильтры">📊</button>
+            <div class="dropdown-wrapper">
+                <button id="more-actions-btn" class="btn-secondary">Ещё ▾</button>
+                <div id="more-actions-menu" class="dropdown-menu hidden">
+                    <button id="auto-ignore-btn">Перенести старые отклики в игнор</button>
+                </div>
+            </div>
         </div>
 
         <div class="filter-bar" id="filter-bar">
@@ -210,6 +216,24 @@
             <div class="modal-footer">
                 <button type="button" id="cancel-delete-btn" class="btn-cancel">Отмена</button>
                 <button type="button" id="confirm-delete-btn" class="btn-danger">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-ignore Confirmation Modal -->
+    <div id="auto-ignore-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Перенос старых откликов</h2>
+                <button type="button" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body auto-ignore-modal-body">
+                <p>Будут перенесены все отклики в статусе «Отклик», созданные более 30 дней назад.</p>
+                <p class="warning">Это действие невозможно отменить</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancel-auto-ignore-btn" class="btn-cancel">Отмена</button>
+                <button type="button" id="confirm-auto-ignore-btn" class="btn-save">Перенести</button>
             </div>
         </div>
     </div>
