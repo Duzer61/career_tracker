@@ -30,12 +30,12 @@ async def create_user(db: AsyncSession, user_data: UserCreate) -> User:
         raise ValueError(f"User with login '{user_data.login}' already exists")
 
 
-async def delete_user(db: AsyncSession, current_user: User) -> None:  # TODO: Дописать
+async def delete_user(db: AsyncSession, user: User) -> None:
     """
     Delete a user.
     """
     try:
-        await db.delete(current_user)
+        await db.delete(user)
         await db.commit()
     except SQLAlchemyError as e:
         await db.rollback()

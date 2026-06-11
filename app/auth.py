@@ -226,16 +226,23 @@ async def delete_all_user_sessions(request: Request) -> None:
     payload = await get_token_payload(access_token)
     username = payload.get("sub")
     if username:
-        redis = await redis_client.get_client()
-        session_key = f"user_sessions:{username}"
-        sessions = await redis.smembers(session_key)
+        await delete_all_user_sessions_by_username(username)
 
-        # Delete all refresh tokens
-        for session_id in sessions:
-            key = f"refresh_token:{username}:{session_id}"
-            await redis.delete(key)
-        # Remove all session IDs
-        await redis.delete(session_key)
+
+async def delete_all_user_sessions_by_username(username: str) -> None:
+    """
+    Delete all refresh tokens and session IDs for a user by username.
+    """
+    redis = await redis_client.get_client()
+    session_key = f"user_sessions:{username}"
+    sessions = await redis.smembers(session_key)
+
+    # Delete all refresh tokens
+    for session_id in sessions:
+        key = f"refresh_token:{username}:{session_id}"
+        await redis.delete(key)
+    # Remove all session IDs
+    await redis.delete(session_key)
 
 
 async def get_user_by_login(db: AsyncSession, login: str) -> User | None:
