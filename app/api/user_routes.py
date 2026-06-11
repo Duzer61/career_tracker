@@ -32,7 +32,7 @@ async def get_users(
         )
 
     # Validate sort_by and order
-    valid_sort_fields = {"login", "created_at"}
+    valid_sort_fields = {"login", "created_at", "is_admin"}
     if sort_by not in valid_sort_fields:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

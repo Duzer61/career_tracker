@@ -109,10 +109,12 @@ function renderUsers() {
 
     for (const user of filtered) {
         const tr = document.createElement('tr');
+        const isAdmin = user.is_admin ? 'Да' : 'Нет';
         tr.innerHTML = `
             <td data-label="ID">${escapeHtml(user.id)}</td>
             <td data-label="Логин">${escapeHtml(user.login)}</td>
             <td data-label="Дата создания">${formatDateTime(user.created_at)}</td>
+            <td data-label="Админ"><span class="admin-badge ${user.is_admin ? 'admin-badge--yes' : 'admin-badge--no'}">${isAdmin}</span></td>
             <td data-label="Действия">
                 <button class="btn-delete-user" data-user-id="${escapeHtml(user.id)}" data-user-login="${escapeHtml(user.login)}">Удалить</button>
             </td>
@@ -134,12 +136,16 @@ function clearSearch() {
 }
 
 function handleSort(field) {
-    // Toggle order if same field, else default to asc for login, desc for date
+    // Toggle order if same field, else default to asc for login, desc for date and is_admin
     if (currentSortBy === field) {
         currentOrder = currentOrder === 'asc' ? 'desc' : 'asc';
     } else {
         currentSortBy = field;
-        currentOrder = field === 'login' ? 'asc' : 'desc';
+        if (field === 'login') {
+            currentOrder = 'asc';
+        } else {
+            currentOrder = 'desc';
+        }
     }
 
     updateSortIndicators();
@@ -150,11 +156,11 @@ function updateSortIndicators() {
     sortableHeaders.forEach(th => {
         const field = th.dataset.sortField;
         if (currentSortBy === field) {
-            th.innerHTML = field === 'login' ? 'Логин' : 'Дата создания';
+            th.innerHTML = field === 'login' ? 'Логин' : field === 'is_admin' ? 'Админ' : 'Дата создания';
             th.innerHTML += currentOrder === 'asc' ? ' ▴' : ' ▾';
             th.classList.add('active-sort');
         } else {
-            th.innerHTML = field === 'login' ? 'Логин' : 'Дата создания';
+            th.innerHTML = field === 'login' ? 'Логин' : field === 'is_admin' ? 'Админ' : 'Дата создания';
             th.classList.remove('active-sort');
         }
     });
@@ -185,6 +191,15 @@ async function confirmDelete() {
             method: 'DELETE',
         });
         console.log('Delete response status:', response.status);
+
+        // 409 — нельзя удалить последнего админа, показываем сообщение без редиректа
+        if (response.status === 409) {
+            const err = await response.json().catch(() => ({}));
+            showToast(err.detail || 'Нельзя удалить последнего администратора', 'error');
+            closeDeleteModal();
+            return;
+        }
+
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             console.error('Delete error response:', err);
