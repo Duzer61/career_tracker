@@ -115,13 +115,22 @@
     background: #e0e0e0;
 }
 
-/* Sort buttons */
-.active-sort {
+/* Sortable headers */
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+th.sortable:hover {
+    background: #e9ecef;
+}
+
+th.sortable.active-sort {
     background: #667eea !important;
     color: white !important;
 }
 
-.active-sort:hover {
+th.sortable.active-sort:hover {
     background: #5568d3 !important;
 }
 

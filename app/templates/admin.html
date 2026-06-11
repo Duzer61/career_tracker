@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/layout.css">
     <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="stylesheet" href="/static/css/modals.css">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 </head>
 <body>
@@ -26,8 +27,6 @@
                 <input type="text" id="search-input" class="search-input" placeholder="Поиск по логину..." autocomplete="off">
                 <button id="search-clear-btn" class="search-clear-btn hidden">&times;</button>
             </div>
-            <button id="sort-login-btn" class="btn-secondary" data-ascending="true">Логин ▾</button>
-            <button id="sort-date-btn" class="btn-secondary active-sort" data-ascending="false">Дата ▴</button>
             <span id="user-count" class="visible-count">0</span>
         </div>
 
@@ -37,8 +36,8 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Логин</th>
-                            <th>Дата создания</th>
+                            <th data-sort-field="login" class="sortable">Логин</th>
+                            <th data-sort-field="created_at" class="sortable">Дата создания</th>
                             <th>Действия</th>
                         </tr>
                     </thead>

@@ -12,8 +12,7 @@ const userCount = document.getElementById('user-count');
 const emptyState = document.getElementById('empty-state');
 const searchInput = document.getElementById('search-input');
 const searchClearBtn = document.getElementById('search-clear-btn');
-const sortLoginBtn = document.getElementById('sort-login-btn');
-const sortDateBtn = document.getElementById('sort-date-btn');
+const sortableHeaders = document.querySelectorAll('th.sortable');
 const deleteModal = document.getElementById('delete-modal');
 const deleteUserName = document.getElementById('delete-user-name');
 const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -47,16 +46,29 @@ async function initAdmin() {
     searchInput.addEventListener('input', handleSearch);
     searchClearBtn.addEventListener('click', clearSearch);
 
-    sortLoginBtn.addEventListener('click', () => handleSort('login'));
-    sortDateBtn.addEventListener('click', () => handleSort('created_at'));
+    // Сортировка по клику на заголовки таблицы
+    sortableHeaders.forEach(th => {
+        th.addEventListener('click', () => handleSort(th.dataset.sortField));
+    });
+
+    // Удаление — делегирование события через tbody
+    usersTbody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-delete-user');
+        if (!btn) return;
+        openDeleteModal(parseInt(btn.dataset.userId), btn.dataset.userLogin);
+    });
 
     confirmDeleteBtn.addEventListener('click', confirmDelete);
     cancelDeleteBtn.addEventListener('click', closeDeleteModal);
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', closeDeleteModal);
     });
-    deleteModal.addEventListener('click', (e) => {
-        if (e.target === deleteModal) closeDeleteModal();
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeDeleteModal();
+        }
     });
 
     // Load users
@@ -105,10 +117,6 @@ function renderUsers() {
                 <button class="btn-delete-user" data-user-id="${escapeHtml(user.id)}" data-user-login="${escapeHtml(user.login)}">Удалить</button>
             </td>
         `;
-        tr.querySelector('.btn-delete-user').addEventListener('click', (e) => {
-            const btn = e.currentTarget;
-            openDeleteModal(parseInt(btn.dataset.userId), btn.dataset.userLogin);
-        });
         usersTbody.appendChild(tr);
     }
 }
@@ -134,20 +142,22 @@ function handleSort(field) {
         currentOrder = field === 'login' ? 'asc' : 'desc';
     }
 
-    updateSortButtons();
+    updateSortIndicators();
     loadUsers();
 }
 
-function updateSortButtons() {
-    sortLoginBtn.innerHTML = currentSortBy === 'login'
-        ? `Логин ${currentOrder === 'asc' ? '▴' : '▾'}`
-        : 'Логин ▾';
-    sortDateBtn.innerHTML = currentSortBy === 'created_at'
-        ? `Дата ${currentOrder === 'asc' ? '▴' : '▾'}`
-        : 'Дата ▾';
-
-    sortLoginBtn.classList.toggle('active-sort', currentSortBy === 'login');
-    sortDateBtn.classList.toggle('active-sort', currentSortBy === 'created_at');
+function updateSortIndicators() {
+    sortableHeaders.forEach(th => {
+        const field = th.dataset.sortField;
+        if (currentSortBy === field) {
+            th.innerHTML = field === 'login' ? 'Логин' : 'Дата создания';
+            th.innerHTML += currentOrder === 'asc' ? ' ▴' : ' ▾';
+            th.classList.add('active-sort');
+        } else {
+            th.innerHTML = field === 'login' ? 'Логин' : 'Дата создания';
+            th.classList.remove('active-sort');
+        }
+    });
 }
 
 // Delete modal
@@ -170,18 +180,24 @@ async function confirmDelete() {
     confirmDeleteBtn.textContent = 'Удаление...';
 
     try {
+        console.log('Deleting user ID:', deleteUserId);
         const response = await authenticatedFetch(`${API_BASE}/users/${deleteUserId}`, {
             method: 'DELETE',
         });
+        console.log('Delete response status:', response.status);
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
+            console.error('Delete error response:', err);
             throw new Error(err.detail || 'Ошибка удаления пользователя');
         }
         showToast('Пользователь удалён', 'success');
         closeDeleteModal();
         await loadUsers();
     } catch (error) {
+        console.error('Error in confirmDelete:', error);
         showToast('Ошибка: ' + error.message, 'error');
+        closeDeleteModal();
+        window.location.href = '/';
     } finally {
         confirmDeleteBtn.disabled = false;
         confirmDeleteBtn.textContent = 'Удалить';
