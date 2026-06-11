@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Администрирование - Career Tracker</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body>
+    <!-- ====== APP ====== -->
+    <div id="app-container">
+        <header class="app-header">
+            <h1>Администрирование</h1>
+            <div class="header-right">
+                <span id="username-display" class="username-display"></span>
+                <a href="/" class="btn-secondary" style="text-decoration:none;">На главную</a>
+                <button id="logout-btn" class="logout-btn">Выйти</button>
+            </div>
+        </header>
+
+        <div class="toolbar">
+            <div class="search-wrapper">
+                <input type="text" id="search-input" class="search-input" placeholder="Поиск по логину..." autocomplete="off">
+                <button id="search-clear-btn" class="search-clear-btn hidden">&times;</button>
+            </div>
+            <button id="sort-login-btn" class="btn-secondary" data-ascending="true">Логин ▾</button>
+            <button id="sort-date-btn" class="btn-secondary active-sort" data-ascending="false">Дата ▴</button>
+            <span id="user-count" class="visible-count">0</span>
+        </div>
+
+        <div class="main-content">
+            <div class="admin-table-wrapper">
+                <table id="users-table" class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Логин</th>
+                            <th>Дата создания</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <!-- Rows rendered by JS -->
+                    </tbody>
+                </table>
+                <div id="empty-state" class="empty-state hidden">
+                    <p>Пользователи не найдены</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== Delete Confirmation Modal ====== -->
+    <div id="delete-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Подтверждение удаления</h2>
+                <button type="button" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body delete-modal-body">
+                <p>Вы действительно хотите удалить пользователя <strong id="delete-user-name"></strong>?</p>
+                <p class="warning">Это действие невозможно отменить</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancel-delete-btn" class="btn-cancel">Отмена</button>
+                <button type="button" id="confirm-delete-btn" class="btn-danger">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== SCRIPTS ====== -->
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/state.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

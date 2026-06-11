@@ -253,6 +253,15 @@ function setupEventListeners() {
         }
     });
 
+    // Admin button
+    const adminBtn = document.getElementById('admin-btn');
+    if (adminBtn) {
+        adminBtn.addEventListener('click', () => {
+            moreActionsMenu.classList.add('hidden');
+            window.location.href = '/admin';
+        });
+    }
+
     // Auto-ignore
     if (autoIgnoreBtn) {
         autoIgnoreBtn.addEventListener('click', () => {

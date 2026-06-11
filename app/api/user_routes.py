@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, select
 
 from app.auth import delete_all_user_sessions_by_username, get_current_user
 from app.crud import delete_user
 from app.db.database import SessionDep
 from app.db.models import User
-from app.schemas import AdminUserResponse, UserResponse
+from app.schemas import AdminUserResponse
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -15,21 +15,45 @@ async def test_page():
     return {"status": "Ok!"}
 
 
-@router.get("", response_model=list[AdminUserResponse])  # TODO: remove this endpoint
-async def get_users(db: SessionDep, current_user: User = Depends(get_current_user)):
+@router.get("", response_model=list[AdminUserResponse])
+async def get_users(
+    db: SessionDep,
+    current_user: User = Depends(get_current_user),
+    sort_by: str = Query("created_at", description="Field to sort by: login or created_at"),
+    order: str = Query("desc", description="Sort order: asc or desc"),
+):
     """
     Get all users. For users with admin role only.
+    Supports sorting by login or created_at in ascending or descending order.
     """
     if not current_user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="You can't use this endpoint"
         )
-    result = await db.execute(select(User))
+
+    # Validate sort_by and order
+    valid_sort_fields = {"login", "created_at"}
+    if sort_by not in valid_sort_fields:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid sort_by field. Must be one of: {', '.join(valid_sort_fields)}",
+        )
+    if order not in ("asc", "desc"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid order. Must be 'asc' or 'desc'",
+        )
+
+    # Build query with sorting
+    sort_column = getattr(User, sort_by)
+    query = select(User).order_by(sort_column.asc() if order == "asc" else sort_column.desc())
+
+    result = await db.execute(query)
     users = result.scalars().all()
     return users
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=AdminUserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """
     Get current user info.

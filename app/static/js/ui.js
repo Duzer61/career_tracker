@@ -13,6 +13,12 @@ function showApp() {
     document.getElementById('auth-container').classList.add('hidden');
     document.getElementById('app-container').classList.remove('hidden');
     document.getElementById('username-display').textContent = currentUser.login;
+
+    // Show admin button only for admin users
+    const adminBtn = document.getElementById('admin-btn');
+    if (adminBtn) {
+        adminBtn.classList.toggle('hidden', !currentUser.is_admin);
+    }
 }
 
 function switchTab(tabName) {
