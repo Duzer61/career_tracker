@@ -51,7 +51,12 @@ async def not_found_handler(request: Request, exc):
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse(
-        name="index.html", context={"request": request}, request=request
+        name="index.html",
+        context={
+            "request": request,
+            "smartcaptcha_site_key": cf.SMARTCAPTCHA_SITE_KEY,
+        },
+        request=request,
     )
 
 

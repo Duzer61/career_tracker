@@ -3,6 +3,10 @@
 function showAuth() {
     document.getElementById('auth-container').classList.remove('hidden');
     document.getElementById('app-container').classList.add('hidden');
+    // Render Yandex SmartCaptcha widgets
+    if (typeof renderAuthCaptchas === 'function') {
+        setTimeout(renderAuthCaptchas, 100);
+    }
 }
 
 function showApp() {

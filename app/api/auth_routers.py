@@ -9,6 +9,7 @@ from app.auth import (
     refresh_tokens,
     set_cookie,
 )
+from app.captcha import verify_smartcaptcha
 from app.config import config as cf
 from app.crud import create_user
 from app.db.database import SessionDep
@@ -20,15 +21,26 @@ router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, db: SessionDep):
+async def register(
+    request: Request,
+    user_data: UserCreate,
+    db: SessionDep,
+):
     """
     Register a new user.
     """
-
     if cf.ONLY_ALLOWED_USERNAMES_MODE and user_data.login not in cf.ALLOWED_USERNAMES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The project is in test mode. You can't register right now.",
+        )
+    if not await verify_smartcaptcha(
+        user_data.captcha_token,
+        ip=request.client.host if request.client else None,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Captcha validation failed",
         )
     db_user = await get_user_by_login(db, user_data.login)
     if db_user:
@@ -42,6 +54,7 @@ async def register(user_data: UserCreate, db: SessionDep):
 
 @router.post("/login")
 async def login(
+    request: Request,
     response: Response,
     user_data: UserLogin,
     db: SessionDep,
@@ -50,6 +63,14 @@ async def login(
     """
     Authenticate user and return access and refresh tokens.
     """
+    if not await verify_smartcaptcha(
+        user_data.captcha_token,
+        ip=request.client.host if request.client else None,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Captcha validation failed",
+        )
     authenticated_user: User = await authenticate_user(db, user_data.login, user_data.password)
     if not authenticated_user:
         raise HTTPException(

@@ -25,8 +25,10 @@ class Config:
     ONLY_ALLOWED_USERNAMES_MODE: bool
     ALLOWED_USERNAMES: list[str]
     IS_PROD: bool
+    SMARTCAPTCHA_SITE_KEY: str
+    SMARTCAPTCHA_SECRET_KEY: str
     DEFAULT_TOKEN_LIFETIME: int = 30  # minutes
-    MAX_LOGIN_ATTEMPTS: int = 5  # max attempts in time window
+    MAX_LOGIN_ATTEMPTS: int = 10  # max attempts in time window
     WINDOW_LOGIN_ATTEMPTS: int = 300  # seconds
     AUTO_IGNORE_DAYS: int = 30  # days after which created applications are auto-ignored
 
@@ -63,6 +65,8 @@ def load_config() -> Config:
         ONLY_ALLOWED_USERNAMES_MODE=get_bool(env("ONLY_ALLOWED_USERNAMES_MODE", "on")),
         ALLOWED_USERNAMES=allowed_usernames,
         IS_PROD=env("ENVIRON") == "prod",
+        SMARTCAPTCHA_SITE_KEY=env("SMARTCAPTCHA_SITE_KEY", ""),
+        SMARTCAPTCHA_SECRET_KEY=env("SMARTCAPTCHA_SECRET_KEY", ""),
     )
 
 

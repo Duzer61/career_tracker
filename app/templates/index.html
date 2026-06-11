@@ -44,6 +44,7 @@
                         <label for="login-password">Пароль</label>
                         <input type="password" id="login-password" placeholder="Введите пароль" required>
                     </div>
+                    <div id="login-captcha-container" class="captcha-container"></div>
                     <button type="submit" class="btn btn-primary">Войти</button>
                 </form>
 
@@ -56,6 +57,7 @@
                         <label for="register-password">Пароль</label>
                         <input type="password" id="register-password" placeholder="Придумайте пароль" required>
                     </div>
+                    <div id="register-captcha-container" class="captcha-container"></div>
                     <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
                 </form>
 
@@ -237,8 +239,17 @@
         </div>
     </div>
 
+    <!-- ====== Yandex SmartCaptcha ====== -->
+    <script
+      src="https://smartcaptcha.cloud.yandex.ru/captcha.js?render=onload&onload=onSmartCaptchaReady"
+      defer
+    ></script>
+
     <!-- ====== SCRIPTS (order matters: dependencies first) ====== -->
     <script src="/static/js/config.js"></script>
+    <script>
+      SMARTCAPTCHA_SITE_KEY = '{{ smartcaptcha_site_key }}';
+    </script>
     <script src="/static/js/state.js"></script>
     <script src="/static/js/utils.js"></script>
     <script src="/static/js/api.js"></script>

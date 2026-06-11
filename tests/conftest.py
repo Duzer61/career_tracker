@@ -24,6 +24,8 @@ def get_test_config() -> Config:
         ONLY_ALLOWED_USERNAMES_MODE=False,
         ALLOWED_USERNAMES=[],
         IS_PROD=False,
+        SMARTCAPTCHA_SITE_KEY="",
+        SMARTCAPTCHA_SECRET_KEY="",
     )
 
 

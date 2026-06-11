@@ -13,6 +13,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    captcha_token: str = ""
 
     @field_validator("password")
     @classmethod
@@ -33,6 +34,7 @@ class UserCreate(UserBase):
 
 class UserLogin(UserBase):
     password: str
+    captcha_token: str = ""
 
 
 class UserResponse(UserBase):

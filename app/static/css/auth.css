@@ -113,6 +113,13 @@
     background: #5568d3;
 }
 
+.captcha-container {
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    min-height: 80px;
+}
+
 .auth-message {
     margin-top: 15px;
     text-align: center;
