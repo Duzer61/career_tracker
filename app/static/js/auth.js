@@ -47,10 +47,27 @@ function resetCaptcha(containerId) {
 }
 
 async function checkAuth() {
+    // First try with httponly cookies (tokens set by server)
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/users/me`);
+        if (response.ok) {
+            currentUser = await response.json();
+            showApp();
+            await loadApplications();
+            return;
+        }
+    } catch (err) {
+        // Token invalid or missing
+    }
+
+    // Fallback: try with localStorage token (legacy)
     const token = localStorage.getItem('access_token');
     if (token) {
         try {
-            const response = await authenticatedFetch(`${API_BASE}/users/me`);
+            const response = await fetch(`${API_BASE}/users/me`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+                credentials: 'include'
+            });
             if (response.ok) {
                 currentUser = await response.json();
                 showApp();
@@ -61,6 +78,7 @@ async function checkAuth() {
             // Token invalid
         }
     }
+
     showAuth();
 }
 
@@ -82,8 +100,6 @@ async function handleLogin(e) {
         const data = await response.json();
 
         if (response.ok) {
-            localStorage.setItem('access_token', data.access_token);
-            localStorage.setItem('refresh_token', data.refresh_token);
             await checkAuth();
         } else {
             resetCaptcha('login-captcha-container');
@@ -116,8 +132,7 @@ async function handleRegister(e) {
         const data = await response.json();
 
         if (response.ok) {
-            localStorage.setItem('access_token', data.access_token);
-            localStorage.setItem('refresh_token', data.refresh_token);
+            showToast('Регистрация прошла успешно', 'success');
             await checkAuth();
         } else {
             resetCaptcha('register-captcha-container');

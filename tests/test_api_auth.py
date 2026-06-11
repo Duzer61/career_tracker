@@ -9,7 +9,7 @@ class TestRegister:
     REGISTER_URL = "/api/auth/register"
 
     async def test_register_success(self, client):
-        """Should register a new user and return user data."""
+        """Should register a new user, set cookies, and return user data with message."""
         response = await client.post(
             self.REGISTER_URL,
             json={"login": "newuser", "password": "StrongPass1"},
@@ -19,6 +19,12 @@ class TestRegister:
         assert data["login"] == "newuser"
         assert "id" in data
         assert "password" not in data
+        assert data["message"] == "Регистрация прошла успешно"
+
+        # Check that cookies are set (auto-login)
+        cookies = dict(response.cookies)
+        assert "access_token" in cookies
+        assert "refresh_token" in cookies
 
     async def test_register_duplicate_login(self, client):
         """Should return 400 when registering with an existing login."""

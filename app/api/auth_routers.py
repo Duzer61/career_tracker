@@ -20,14 +20,15 @@ from app.schemas import UserCreate, UserLogin, UserResponse
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
     request: Request,
+    response: Response,
     user_data: UserCreate,
     db: SessionDep,
 ):
     """
-    Register a new user.
+    Register a new user and automatically log them in.
     """
     if cf.ONLY_ALLOWED_USERNAMES_MODE and user_data.login not in cf.ALLOWED_USERNAMES:
         raise HTTPException(
@@ -49,7 +50,15 @@ async def register(
             detail="User with this login already exists",
         )
     user = await create_user(db, user_data)
-    return user
+
+    # Auto-login after registration
+    access_token, refresh_token = await create_access_and_refresh_tokens(user.login)
+    await set_cookie(response, access_token, refresh_token)
+
+    return {
+        **UserResponse.model_validate(user).model_dump(),
+        "message": "Регистрация прошла успешно",
+    }
 
 
 @router.post("/login")
