@@ -48,12 +48,20 @@ class AdminUserResponse(UserResponse):
     is_admin: bool
 
 
+class CurrentUserResponse(AdminUserResponse):
+    is_superadmin: bool = False
+
+
 class RefreshTokenSchema(BaseModel):
     refresh_token: str
 
 
 class AccessTokenSchema(BaseModel):
     access_token: str
+
+
+class AdminActionRequest(BaseModel):
+    is_admin: bool
 
 
 class ApplicationResponse(BaseModel):

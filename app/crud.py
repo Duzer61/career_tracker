@@ -42,6 +42,25 @@ async def delete_user(db: AsyncSession, user: User) -> None:
         raise ValueError(f"Error deleting user: {e}")
 
 
+async def set_user_admin_status(db: AsyncSession, user_id: int, is_admin: bool) -> User:
+    """
+    Set the admin status for a user.
+    Returns the updated user.
+    """
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_admin = is_admin
+    try:
+        await db.commit()
+        await db.refresh(user)
+        return user
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise ValueError(f"Error updating admin status: {e}")
+
+
 # Board, applications crud
 
 

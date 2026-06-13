@@ -1,5 +1,7 @@
 """Integration tests for authentication API endpoints."""
 
+import pytest
+
 from tests.helpers import set_client_cookies
 
 
@@ -155,3 +157,107 @@ class TestLogout:
         response = await client.post(self.LOGOUT_ALL_URL)
         assert response.status_code == 200
         assert response.json() == {"message": "Logged out from all devices"}
+
+
+class TestSuperAdmin:
+    """Tests for superadmin functionality via user API endpoints."""
+
+    REGISTER_URL = "/api/auth/register"
+    LOGIN_URL = "/api/auth/login"
+
+    @pytest.fixture(autouse=True)
+    def _setup(self):
+        """Override config to set SUPERADMIN_LOGIN for this test class."""
+        from app.config import config
+
+        self._orig_superadmin = config.SUPERADMIN_LOGIN
+        config.SUPERADMIN_LOGIN = "superadmin"
+        yield
+        config.SUPERADMIN_LOGIN = self._orig_superadmin
+
+    async def _create_user_and_login(self, client, login: str, password="StrongPass1"):
+        """Register a user and return client with cookies set."""
+        await client.post(self.REGISTER_URL, json={"login": login, "password": password})
+        resp = await client.post(self.LOGIN_URL, json={"login": login, "password": password})
+        set_client_cookies(client, resp)
+        return resp
+
+    async def test_get_me_returns_is_superadmin_for_superadmin(self, client):
+        """Should return is_superadmin=true for the user matching SUPERADMIN_LOGIN."""
+        await self._create_user_and_login(client, "superadmin")
+        response = await client.get("/api/users/me")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["is_superadmin"] is True
+        assert data["is_admin"] is False  # superadmin without explicit admin flag
+
+    async def test_get_me_returns_is_superadmin_false_for_regular_user(self, client):
+        """Should return is_superadmin=false for a regular user."""
+        await self._create_user_and_login(client, "regularuser")
+        response = await client.get("/api/users/me")
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("is_superadmin") is False
+
+    async def test_superadmin_cannot_delete_self(self, client):
+        """Superadmin should get 403 when trying to delete own account."""
+        await self._create_user_and_login(client, "superadmin")
+        response = await client.delete("/api/users/me")
+        assert response.status_code == 403
+        assert "protected" in response.json()["detail"].lower()
+
+    async def test_toggle_admin_status_by_non_superadmin_returns_403(self, client):
+        """Regular admin should get 403 when trying to toggle admin status."""
+        # Register and login as a regular admin
+        await self._create_user_and_login(client, "regularuser")
+        response = await client.patch(
+            "/api/users/1/admin",
+            json={"is_admin": True},
+        )
+        assert response.status_code == 403
+        assert "Not enough permissions" in response.json()["detail"]
+
+    async def test_superadmin_can_toggle_admin_status(self, client, test_session):
+        """Superadmin should be able to set/unset admin status for another user."""
+        # Create superadmin user and target user
+        await client.post(
+            self.REGISTER_URL, json={"login": "superadmin", "password": "StrongPass1"}
+        )
+        await client.post(
+            self.REGISTER_URL, json={"login": "targetuser", "password": "StrongPass1"}
+        )
+
+        # Login as superadmin
+        await self._create_user_and_login(client, "superadmin")
+
+        # Get target user by listing users
+        list_resp = await client.get("/api/users")
+        assert list_resp.status_code == 200
+        users = list_resp.json()
+        target = [u for u in users if u["login"] == "targetuser"][0]
+        target_id = target["id"]
+
+        # Toggle admin ON
+        resp_on = await client.patch(
+            f"/api/users/{target_id}/admin",
+            json={"is_admin": True},
+        )
+        assert resp_on.status_code == 200
+        assert resp_on.json()["is_admin"] is True
+
+        # Toggle admin OFF
+        resp_off = await client.patch(
+            f"/api/users/{target_id}/admin",
+            json={"is_admin": False},
+        )
+        assert resp_off.status_code == 200
+        assert resp_off.json()["is_admin"] is False
+
+    async def test_superadmin_without_admin_flag_can_access_admin_page(self, client):
+        """Superadmin with is_admin=False should still be able to access admin endpoints."""
+        await self._create_user_and_login(client, "superadmin")
+        # The user is superadmin but not admin — should still access /api/users
+        response = await client.get("/api/users")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)

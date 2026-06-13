@@ -27,6 +27,7 @@ class Config:
     IS_PROD: bool
     SMARTCAPTCHA_SITE_KEY: str
     SMARTCAPTCHA_SECRET_KEY: str
+    SUPERADMIN_LOGIN: str = ""
     DEFAULT_TOKEN_LIFETIME: int = 30  # minutes
     MAX_LOGIN_ATTEMPTS: int = 10  # max attempts in time window
     WINDOW_LOGIN_ATTEMPTS: int = 300  # seconds
@@ -67,6 +68,7 @@ def load_config() -> Config:
         IS_PROD=env("ENVIRON") == "prod",
         SMARTCAPTCHA_SITE_KEY=env("SMARTCAPTCHA_SITE_KEY", ""),
         SMARTCAPTCHA_SECRET_KEY=env("SMARTCAPTCHA_SECRET_KEY", ""),
+        SUPERADMIN_LOGIN=env("SUPERADMIN_LOGIN", ""),
     )
 
 

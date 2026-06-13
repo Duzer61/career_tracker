@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, select
 
-from app.auth import delete_all_user_sessions_by_username, get_current_user
-from app.crud import delete_user
+from app.auth import (
+    delete_all_user_sessions_by_username,
+    get_current_user,
+    has_admin_privileges,
+    is_superadmin,
+)
+from app.crud import delete_user, set_user_admin_status
 from app.db.database import SessionDep
 from app.db.models import User
-from app.schemas import AdminUserResponse
+from app.schemas import AdminActionRequest, AdminUserResponse, CurrentUserResponse
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -26,7 +31,7 @@ async def get_users(
     Get all users. For users with admin role only.
     Supports sorting by login or created_at in ascending or descending order.
     """
-    if not current_user.is_admin:
+    if not has_admin_privileges(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="You can't use this endpoint"
         )
@@ -53,12 +58,18 @@ async def get_users(
     return users
 
 
-@router.get("/me", response_model=AdminUserResponse)
+@router.get("/me", response_model=CurrentUserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """
-    Get current user info.
+    Get current user info, including superadmin status.
     """
-    return current_user
+    return CurrentUserResponse(
+        id=current_user.id,
+        login=current_user.login,
+        is_admin=current_user.is_admin,
+        created_at=current_user.created_at,
+        is_superadmin=is_superadmin(current_user),
+    )
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
@@ -69,8 +80,14 @@ async def delete_current_user(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Delete current user.
+    Delete current user. Superadmin cannot be deleted.
     """
+    if is_superadmin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This user is protected and cannot be deleted",
+        )
+
     # Delete user from database
     await delete_user(db, current_user)
     # Delete all user sessions
@@ -89,14 +106,21 @@ async def delete_user_by_admin(
 ):
     """
     Delete user by ID. For admin users only.
-    Prevents deleting the last admin user.
+    Superadmin cannot be deleted.
     """
-    if not current_user.is_admin:
+    if not has_admin_privileges(current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
 
     user = await db.scalar(select(User).where(User.id == user_id))
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Protect superadmin from deletion
+    if is_superadmin(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This user is protected and cannot be deleted",
+        )
 
     # Prevent deleting the last admin
     if user.is_admin:
@@ -112,3 +136,24 @@ async def delete_user_by_admin(
     # Delete all user sessions
     await delete_all_user_sessions_by_username(user.login)
     return None
+
+
+@router.patch("/{user_id}/admin", response_model=AdminUserResponse)
+async def toggle_admin_status(
+    user_id: int,
+    body: AdminActionRequest,
+    db: SessionDep,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Set or unset admin status for a user.
+    Superadmin only. Superadmin can also manage their own admin status.
+    """
+    if not is_superadmin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to manage admin status",
+        )
+
+    updated_user = await set_user_admin_status(db, user_id, body.is_admin)
+    return updated_user

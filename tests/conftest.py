@@ -26,6 +26,7 @@ def get_test_config() -> Config:
         IS_PROD=False,
         SMARTCAPTCHA_SITE_KEY="",
         SMARTCAPTCHA_SECRET_KEY="",
+        SUPERADMIN_LOGIN="superadmin",
     )
 
 

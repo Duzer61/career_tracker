@@ -5,6 +5,7 @@ let allUsers = [];
 let currentSortBy = 'created_at';
 let currentOrder = 'desc';
 let deleteUserId = null;
+let currentUser = null;
 
 // DOM references
 const usersTbody = document.getElementById('users-tbody');
@@ -17,6 +18,7 @@ const deleteModal = document.getElementById('delete-modal');
 const deleteUserName = document.getElementById('delete-user-name');
 const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+const adminActionsCol = document.getElementById('admin-actions-col');
 
 // Initialize admin page
 async function initAdmin() {
@@ -28,7 +30,7 @@ async function initAdmin() {
             return;
         }
         const user = await response.json();
-        if (!user.is_admin) {
+        if (!user.is_admin && !user.is_superadmin) {
             window.location.href = '/';
             return;
         }
@@ -54,7 +56,14 @@ async function initAdmin() {
     // Удаление — делегирование события через tbody
     usersTbody.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-delete-user');
-        if (!btn) return;
+        if (!btn) {
+            // Toggle admin status
+            const toggleBtn = e.target.closest('.btn-toggle-admin');
+            if (toggleBtn) {
+                handleToggleAdmin(parseInt(toggleBtn.dataset.userId), toggleBtn.dataset.currentAdmin === 'true');
+            }
+            return;
+        }
         openDeleteModal(parseInt(btn.dataset.userId), btn.dataset.userLogin);
     });
 
@@ -70,6 +79,11 @@ async function initAdmin() {
             closeDeleteModal();
         }
     });
+
+    // Show admin actions column only for superadmin
+    if (currentUser.is_superadmin) {
+        adminActionsCol.classList.remove('hidden');
+    }
 
     // Load users
     await loadUsers();
@@ -107,9 +121,22 @@ function renderUsers() {
 
     if (!hasUsers) return;
 
+    const isSuper = currentUser && currentUser.is_superadmin;
+
     for (const user of filtered) {
         const tr = document.createElement('tr');
         const isAdmin = user.is_admin ? 'Да' : 'Нет';
+        const isSelf = currentUser && currentUser.id === user.id;
+
+        let actionsHtml = '';
+        if (isSuper && !isSelf) {
+            const adminLabel = user.is_admin ? 'Снять админа' : 'Назначить админом';
+            const toggleClass = user.is_admin ? 'btn-toggle-admin--remove' : 'btn-toggle-admin--add';
+            actionsHtml = `
+                <button class="btn-toggle-admin ${toggleClass}" data-user-id="${escapeHtml(user.id)}" data-current-admin="${user.is_admin}">${adminLabel}</button>
+            `;
+        }
+
         tr.innerHTML = `
             <td data-label="ID">${escapeHtml(user.id)}</td>
             <td data-label="Логин">${escapeHtml(user.login)}</td>
@@ -118,8 +145,27 @@ function renderUsers() {
             <td data-label="Действия">
                 <button class="btn-delete-user" data-user-id="${escapeHtml(user.id)}" data-user-login="${escapeHtml(user.login)}">Удалить</button>
             </td>
+            <td data-label="Управление">${actionsHtml}</td>
         `;
         usersTbody.appendChild(tr);
+    }
+}
+
+async function handleToggleAdmin(userId, isCurrentlyAdmin) {
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/users/${userId}/admin`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_admin: !isCurrentlyAdmin }),
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || 'Ошибка изменения статуса администратора');
+        }
+        showToast('Статус администратора обновлён', 'success');
+        await loadUsers();
+    } catch (error) {
+        showToast('Ошибка: ' + error.message, 'error');
     }
 }
 

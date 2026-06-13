@@ -16,6 +16,17 @@ from app.db.models import User
 from app.db.redis import redis_client
 from app.utils import utc_now
 
+
+def is_superadmin(user: User) -> bool:
+    """Check if the user is a superadmin based on config."""
+    return bool(cf.SUPERADMIN_LOGIN) and user.login == cf.SUPERADMIN_LOGIN
+
+
+def has_admin_privileges(user: User) -> bool:
+    """Check if the user has admin-level access (admin or superadmin)."""
+    return user.is_admin or is_superadmin(user)
+
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
