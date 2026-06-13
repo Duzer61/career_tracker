@@ -52,6 +52,11 @@
     border-bottom: none;
 }
 
+/* Zebra striping for rows */
+.admin-table tbody tr:nth-child(even) {
+    background-color: #f8f9fb;
+}
+
 /* User ID column */
 .admin-table td:first-child {
     font-weight: 600;
@@ -100,6 +105,38 @@
 .admin-table td:last-child {
     width: 100px;
     text-align: center;
+}
+
+/* Toggle admin buttons */
+.btn-toggle-admin {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    border: none;
+}
+
+.btn-toggle-admin--add {
+    background: #667eea;
+    color: white;
+}
+
+.btn-toggle-admin--add:hover {
+    background: #5568d3;
+}
+
+.btn-toggle-admin--remove {
+    background: transparent;
+    color: #e67e22;
+    border: 1.5px solid #e67e22;
+}
+
+.btn-toggle-admin--remove:hover {
+    background: #e67e22;
+    color: white;
 }
 
 /* Delete button */
