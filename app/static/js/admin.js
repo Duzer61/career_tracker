@@ -5,6 +5,8 @@ let allUsers = [];
 let currentSortBy = 'created_at';
 let currentOrder = 'desc';
 let deleteUserId = null;
+let toggleAdminUserId = null;
+let toggleAdminIsCurrentlyAdmin = null;
 
 // DOM references
 const usersTbody = document.getElementById('users-tbody');
@@ -18,6 +20,11 @@ const deleteUserName = document.getElementById('delete-user-name');
 const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
 const adminActionsCol = document.getElementById('admin-actions-col');
+const toggleAdminModal = document.getElementById('toggle-admin-modal');
+const toggleAdminModalTitle = document.getElementById('toggle-admin-modal-title');
+const toggleAdminModalText = document.getElementById('toggle-admin-modal-text');
+const confirmToggleAdminBtn = document.getElementById('confirm-toggle-admin-btn');
+const cancelToggleAdminBtn = document.getElementById('cancel-toggle-admin-btn');
 
 // Initialize admin page
 async function initAdmin() {
@@ -59,7 +66,11 @@ async function initAdmin() {
             // Toggle admin status
             const toggleBtn = e.target.closest('.btn-toggle-admin');
             if (toggleBtn) {
-                handleToggleAdmin(parseInt(toggleBtn.dataset.userId), toggleBtn.dataset.currentAdmin === 'true');
+                openToggleAdminModal(
+                    parseInt(toggleBtn.dataset.userId),
+                    toggleBtn.dataset.currentAdmin === 'true',
+                    toggleBtn.dataset.userLogin
+                );
             }
             return;
         }
@@ -69,13 +80,18 @@ async function initAdmin() {
     confirmDeleteBtn.addEventListener('click', confirmDelete);
     cancelDeleteBtn.addEventListener('click', closeDeleteModal);
     document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', closeDeleteModal);
+        btn.addEventListener('click', closeModal);
     });
+
+    // Toggle admin modal
+    confirmToggleAdminBtn.addEventListener('click', confirmToggleAdmin);
+    cancelToggleAdminBtn.addEventListener('click', closeToggleAdminModal);
 
     // Close on Escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeDeleteModal();
+            closeToggleAdminModal();
         }
     });
 
@@ -128,11 +144,11 @@ function renderUsers() {
         const isSelf = currentUser && currentUser.id === user.id;
 
         let actionsHtml = '';
-        if (isSuper && !isSelf) {
+        if (isSuper) {
             const adminLabel = user.is_admin ? 'Снять админа' : 'Назначить админом';
             const toggleClass = user.is_admin ? 'btn-toggle-admin--remove' : 'btn-toggle-admin--add';
             actionsHtml = `
-                <button class="btn-toggle-admin ${toggleClass}" data-user-id="${escapeHtml(user.id)}" data-current-admin="${user.is_admin}">${adminLabel}</button>
+                <button class="btn-toggle-admin ${toggleClass}" data-user-id="${escapeHtml(user.id)}" data-current-admin="${user.is_admin}" data-user-login="${escapeHtml(user.login)}">${adminLabel}</button>
             `;
         }
 
@@ -209,6 +225,60 @@ function updateSortIndicators() {
             th.classList.remove('active-sort');
         }
     });
+}
+
+// Toggle Admin modal
+function openToggleAdminModal(userId, isCurrentlyAdmin, userLogin) {
+    toggleAdminUserId = userId;
+    toggleAdminIsCurrentlyAdmin = isCurrentlyAdmin;
+    toggleAdminModalTitle.textContent = isCurrentlyAdmin ? 'Снять админа' : 'Назначить админом';
+    const text = isCurrentlyAdmin
+        ? `Вы действительно хотите снять права администратора с пользователя «<strong>${userLogin}</strong>»?`
+        : `Вы действительно хотите назначить пользователя «<strong>${userLogin}</strong>» администратором?`;
+    toggleAdminModalText.innerHTML = text;
+    toggleAdminModal.classList.remove('hidden');
+}
+
+function closeToggleAdminModal() {
+    toggleAdminUserId = null;
+    toggleAdminIsCurrentlyAdmin = null;
+    toggleAdminModal.classList.add('hidden');
+    confirmToggleAdminBtn.disabled = false;
+    confirmToggleAdminBtn.textContent = 'Подтвердить';
+}
+
+function closeModal(e) {
+    // Close whichever modal is currently open
+    closeDeleteModal();
+    closeToggleAdminModal();
+}
+
+async function confirmToggleAdmin() {
+    if (toggleAdminUserId === null) return;
+
+    confirmToggleAdminBtn.disabled = true;
+    confirmToggleAdminBtn.textContent = 'Сохранение...';
+
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/users/${toggleAdminUserId}/admin`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_admin: !toggleAdminIsCurrentlyAdmin }),
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || 'Ошибка изменения статуса администратора');
+        }
+        showToast('Статус администратора обновлён', 'success');
+        closeToggleAdminModal();
+        await loadUsers();
+    } catch (error) {
+        showToast('Ошибка: ' + error.message, 'error');
+        closeToggleAdminModal();
+    } finally {
+        confirmToggleAdminBtn.disabled = false;
+        confirmToggleAdminBtn.textContent = 'Подтвердить';
+    }
 }
 
 // Delete modal

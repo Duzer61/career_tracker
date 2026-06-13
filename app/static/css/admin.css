@@ -214,6 +214,17 @@ th.sortable.active-sort:hover {
     margin-left: 0;
 }
 
+/* Toggle admin modal: match other confirmation modals */
+#toggle-admin-modal .modal-header h2 {
+    color: #333;
+    font-size: 24px;
+}
+
+.toggle-admin-modal-body {
+    font-size: 18px;
+    color: #333;
+}
+
 /* Delete modal warning */
 .warning {
     color: #dc3545;
