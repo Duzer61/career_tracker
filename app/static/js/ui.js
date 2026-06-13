@@ -14,10 +14,10 @@ function showApp() {
     document.getElementById('app-container').classList.remove('hidden');
     document.getElementById('username-display').textContent = currentUser.login;
 
-    // Show admin button only for admin users
+    // Show admin button for admin or superadmin users
     const adminBtn = document.getElementById('admin-btn');
     if (adminBtn) {
-        adminBtn.classList.toggle('hidden', !currentUser.is_admin);
+        adminBtn.classList.toggle('hidden', !currentUser.is_admin && !currentUser.is_superadmin);
     }
 }
 

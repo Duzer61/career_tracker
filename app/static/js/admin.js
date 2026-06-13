@@ -5,7 +5,6 @@ let allUsers = [];
 let currentSortBy = 'created_at';
 let currentOrder = 'desc';
 let deleteUserId = null;
-let currentUser = null;
 
 // DOM references
 const usersTbody = document.getElementById('users-tbody');
@@ -238,10 +237,10 @@ async function confirmDelete() {
         });
         console.log('Delete response status:', response.status);
 
-        // 409 — нельзя удалить последнего админа, показываем сообщение без редиректа
-        if (response.status === 409) {
+        // 409 — нельзя удалить последнего админа, 403 — защищённый пользователь (суперадмин)
+        if (response.status === 409 || response.status === 403) {
             const err = await response.json().catch(() => ({}));
-            showToast(err.detail || 'Нельзя удалить последнего администратора', 'error');
+            showToast(err.detail || 'Нельзя удалить пользователя', 'error');
             closeDeleteModal();
             return;
         }
@@ -258,7 +257,6 @@ async function confirmDelete() {
         console.error('Error in confirmDelete:', error);
         showToast('Ошибка: ' + error.message, 'error');
         closeDeleteModal();
-        window.location.href = '/';
     } finally {
         confirmDeleteBtn.disabled = false;
         confirmDeleteBtn.textContent = 'Удалить';

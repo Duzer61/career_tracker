@@ -49,13 +49,21 @@ async function authenticatedFetch(url, options = {}) {
                 // Refresh failed - logout
                 refreshInProgress = false;
                 currentUser = null;
-                showAuth();
+                if (typeof showAuth === 'function') {
+                    showAuth();
+                } else {
+                    window.location.href = '/';
+                }
                 throw new Error('Session expired. Please login again.');
             }
         } catch (error) {
             refreshInProgress = false;
             currentUser = null;
-            showAuth();
+            if (typeof showAuth === 'function') {
+                showAuth();
+            } else {
+                window.location.href = '/';
+            }
             throw error;
         } finally {
             refreshInProgress = false;
