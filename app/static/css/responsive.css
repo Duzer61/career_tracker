@@ -233,3 +233,33 @@
         padding: 2px;
     }
 }
+
+/* ====== Auth form mobile fix ====== */
+@media (max-width: 768px) {
+    .auth-wrapper {
+        padding: 20px;
+    }
+
+    .captcha-container {
+        max-width: 100%;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+    }
+
+    .captcha-container > div {
+        transform: scale(0.85);
+        transform-origin: center center;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-wrapper {
+        padding: 15px;
+    }
+
+    .captcha-container > div {
+        transform: scale(0.75);
+        transform-origin: center center;
+    }
+}
