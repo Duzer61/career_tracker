@@ -234,6 +234,50 @@
     }
 }
 
+/* ====== Admin page mobile fix ====== */
+@media (max-width: 768px) {
+    /* Header - compact title (admin page only) */
+    .admin-page .app-header h1 {
+        font-size: 14px;
+    }
+
+    /* Home icon button - compact on mobile */
+    .admin-page .header-right a.btn-home-icon {
+        padding: 8px 10px;
+        font-size: 16px;
+        min-width: 36px;
+        min-height: 36px;
+    }
+
+    /* Logout button - compact */
+    .admin-page .header-right .logout-btn {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+
+    /* Search - full width */
+    .admin-page .toolbar .search-wrapper {
+        max-width: none;
+    }
+
+    /* Table wrapper - scrollable */
+    .admin-page .admin-table-wrapper {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Compact action buttons */
+    .admin-page .btn-toggle-admin {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+
+    .admin-page .btn-delete-user {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+}
+
 /* ====== Auth form mobile fix ====== */
 @media (max-width: 768px) {
     .auth-wrapper {

@@ -177,6 +177,26 @@
     background: #e0e0e0;
 }
 
+/* Home icon button */
+.header-right a.btn-home-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    background: #f0f0f0;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.3s;
+    text-decoration: none;
+}
+
+.header-right a.btn-home-icon:hover {
+    background: #e0e0e0;
+}
+
 /* Sortable headers */
 th.sortable {
     cursor: pointer;
