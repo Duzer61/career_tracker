@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.admin_routes import router as admin_router
 from app.api.applications_routers import router as board_router
@@ -37,6 +38,22 @@ app = FastAPI(
     redoc_url=None if cf.IS_PROD else "/redoc",
     openapi_url=None if cf.IS_PROD else "/openapi.json",
 )
+
+
+class NoCacheHTMLMiddleware(BaseHTTPMiddleware):
+    """Disable browser caching for HTML responses to prevent stale page issues."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        content_type = response.headers.get("content-type", "")
+        if "text/html" in content_type:
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
+
+app.add_middleware(NoCacheHTMLMiddleware)
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
