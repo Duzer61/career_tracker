@@ -47,8 +47,7 @@ def parse_date_filters(
         elif period == "month":
             date_from_dt = start_of_day(now) - timedelta(days=30)
         elif period == "old":
-            # Конец дня 30 дней назад — включаем все отклики за этот день
-            date_to_dt = end_of_day(now - timedelta(days=30))
+            date_to_dt = start_of_day(now) - timedelta(days=30)
         else:
             raise HTTPException(
                 status_code=422,

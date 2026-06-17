@@ -23,57 +23,6 @@ function buildFilterQuery() {
     return query;
 }
 
-function matchPeriod(app) {
-    if (!filterPeriod && !isValidDateString(customDateFrom) && !isValidDateString(customDateTo)) return true;
-
-    const appDate = new Date(app.created_at + (app.created_at.endsWith('Z') ? '' : 'Z'));
-    const now = new Date();
-
-    // Custom range takes precedence
-    if (isValidDateString(customDateFrom) || isValidDateString(customDateTo)) {
-        if (isValidDateString(customDateFrom)) {
-            const from = new Date(customDateFrom + 'T00:00:00Z');
-            if (appDate < from) return false;
-        }
-        if (isValidDateString(customDateTo)) {
-            const to = new Date(customDateTo + 'T23:59:59Z');
-            if (appDate > to) return false;
-        }
-        return true;
-    }
-
-    switch (filterPeriod) {
-        case 'today': {
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            return appDate >= today;
-        }
-        case 'yesterday': {
-            const yesterday = new Date(now);
-            yesterday.setDate(yesterday.getDate() - 1);
-            const startOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
-            const endOfYesterday = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
-            return appDate >= startOfYesterday && appDate <= endOfYesterday;
-        }
-        case 'week': {
-            const weekAgo = new Date(now);
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            return appDate >= weekAgo;
-        }
-        case 'month': {
-            const monthAgo = new Date(now);
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            return appDate >= monthAgo;
-        }
-        case 'old': {
-            const monthAgo = new Date(now);
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            return appDate < monthAgo;
-        }
-        default:
-            return true;
-    }
-}
-
 function matchesSearch(app) {
     if (!searchQuery) return true;
 
