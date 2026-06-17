@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import get_password_hash
 from app.db.models import Application, ApplicationStatus, ApplicationStatusHistory, User
 from app.schemas import ApplicationCreate, ApplicationUpdate, UserCreate
-from app.utils import utc_now
+from app.utils import start_of_day, utc_now
 
 # User crud
 
@@ -260,7 +260,7 @@ async def auto_ignore_old_applications(db: AsyncSession, current_user: User, day
     Uses bulk UPDATE and INSERT operations.
     Returns the number of affected applications.
     """
-    cutoff_date = utc_now() - timedelta(days=days)
+    cutoff_date = start_of_day(utc_now()) - timedelta(days=days)
 
     result = await db.scalars(
         select(Application.id).where(
