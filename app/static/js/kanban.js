@@ -81,9 +81,10 @@ function createCard(app) {
     return card;
 }
 
+let loadingAppData = false;
 async function loadApplications() {
-    if (refreshInProgress) return;
-    refreshInProgress = true;
+    if (loadingAppData) return;
+    loadingAppData = true;
 
     try {
         const query = buildFilterQuery();
@@ -94,7 +95,7 @@ async function loadApplications() {
     } catch (err) {
         // Silently fail — data will be stale
     } finally {
-        refreshInProgress = false;
+        loadingAppData = false;
     }
 }
 
