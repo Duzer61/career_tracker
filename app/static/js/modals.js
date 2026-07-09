@@ -14,6 +14,17 @@ const MAX_LENGTHS = {
 };
 
 // Utility: extract user-friendly error message from API response
+function sanitizeVacancyUrl(url) {
+    // Если ссылка с hh.ru — отсекаем query-параметры
+    if (url && (url.startsWith('https://hh.ru/vacancy/') || url.startsWith('http://hh.ru/vacancy/'))) {
+        const questionIndex = url.indexOf('?');
+        if (questionIndex !== -1) {
+            return url.substring(0, questionIndex);
+        }
+    }
+    return url;
+}
+
 function extractErrorMessage(data) {
     if (typeof data.detail === 'string') {
         return data.detail;
@@ -66,7 +77,7 @@ async function handleApplicationSubmit(e) {
     const id = document.getElementById('application-id').value;
     const companyName = document.getElementById('company-name').value.trim();
     const vacancyName = document.getElementById('vacancy-name').value.trim();
-    const vacancyUrl = document.getElementById('vacancy-url').value.trim();
+    const vacancyUrl = sanitizeVacancyUrl(document.getElementById('vacancy-url').value.trim());
     const contacts = document.getElementById('contacts').value.trim();
     const comments = document.getElementById('comments').value.trim();
     const status = document.getElementById('status').value;
