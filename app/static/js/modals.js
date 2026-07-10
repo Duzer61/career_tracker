@@ -16,7 +16,7 @@ const MAX_LENGTHS = {
 // Utility: extract user-friendly error message from API response
 function sanitizeVacancyUrl(url) {
     // Если ссылка с hh.ru (включая поддомены) — отсекаем query-параметры
-    if (url && /^https?:\/\/[^\/]+\.hh\.ru\/vacancy\//i.test(url)) {
+    if (url && url.includes('hh.ru/vacancy/') && (url.startsWith('https://') || url.startsWith('http://'))) {
         const questionIndex = url.indexOf('?');
         if (questionIndex !== -1) {
             return url.substring(0, questionIndex);
