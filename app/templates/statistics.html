@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика - Career Tracker</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/statistics.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body class="statistics-page">
+    <div id="app-container">
+        <header class="app-header">
+            <h1>Статистика откликов</h1>
+            <div class="header-right">
+                <span id="username-display" class="username-display"></span>
+                <a href="/" class="btn-home-icon" title="На главную">🏠</a>
+                <button id="logout-btn" class="logout-btn">Выйти</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Date filter -->
+            <div class="stat-date-filter">
+                <label for="date-from">с</label>
+                <input type="date" id="date-from">
+                <label for="date-to">по</label>
+                <input type="date" id="date-to">
+                <button id="apply-date-btn" class="btn-apply">Применить</button>
+                <button id="reset-date-btn" class="btn-reset">Сброс</button>
+            </div>
+
+            <!-- Loading indicator -->
+            <div id="stat-loading" class="stat-loading">Загрузка статистики...</div>
+
+            <!-- Error message -->
+            <div id="stat-error" class="stat-error hidden"></div>
+
+            <!-- Empty state -->
+            <div id="stat-empty" class="stat-empty hidden">
+                Нет данных за выбранный период
+            </div>
+
+            <!-- Content (hidden until loaded) -->
+            <div id="stat-content" class="hidden">
+                <!-- Stat cards -->
+                <div class="stat-cards">
+                    <div class="stat-card stat-card--total">
+                        <div class="stat-card__value" id="stat-total">0</div>
+                        <div class="stat-card__label">Всего откликов</div>
+                    </div>
+                    <div class="stat-card stat-card--active">
+                        <div class="stat-card__value" id="stat-active">0</div>
+                        <div class="stat-card__label">Активных</div>
+                    </div>
+                    <div class="stat-card stat-card--rejected">
+                        <div class="stat-card__value" id="stat-rejected">0</div>
+                        <div class="stat-card__label">Отказов</div>
+                    </div>
+                    <div class="stat-card stat-card--ignored">
+                        <div class="stat-card__value" id="stat-ignored">0</div>
+                        <div class="stat-card__label">В игноре</div>
+                    </div>
+                    <div class="stat-card stat-card--offer">
+                        <div class="stat-card__value" id="stat-offer">0</div>
+                        <div class="stat-card__label">Офферов</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="stats-charts">
+                    <div class="chart-card">
+                        <h2 class="chart-card__title">Воронка откликов</h2>
+                        <div class="chart-card__canvas">
+                            <canvas id="funnelChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h2 class="chart-card__title">Среднее время между этапами</h2>
+                        <div class="chart-card__canvas">
+                            <canvas id="timeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="chart-card" id="time-table-card">
+                        <h2 class="chart-card__title">Детальное время между этапами (часы)</h2>
+                        <div class="time-table-wrapper">
+                            <table class="time-table" id="time-table">
+                                <thead>
+                                    <tr>
+                                        <th>От этапа</th>
+                                        <th>До этапа</th>
+                                        <th>Среднее</th>
+                                        <th>Медиана</th>
+                                        <th>Мин.</th>
+                                        <th>Макс.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="time-table-body">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== SCRIPTS ====== -->
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/state.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/static/js/statistics.js"></script>
+</body>
+</html>

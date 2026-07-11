@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
@@ -11,6 +13,8 @@ from app.schemas import StatisticsSummary
 from app.utils import end_of_day
 
 router = APIRouter(prefix="/api/statistics", tags=["statistics"])
+page_router = APIRouter(tags=["statistics_page"])
+templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("", response_model=StatisticsSummary)
@@ -69,4 +73,13 @@ async def statistics(
         current_user=current_user,
         date_from=date_from_dt,
         date_to=date_to_dt,
+    )
+
+
+@page_router.get("/statistics", response_class=HTMLResponse)
+async def statistics_page(request: Request):
+    return templates.TemplateResponse(
+        name="statistics.html",
+        context={"request": request},
+        request=request,
     )

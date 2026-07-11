@@ -253,6 +253,15 @@ function setupEventListeners() {
         }
     });
 
+    // Statistics button
+    const statisticsBtn = document.getElementById('statistics-btn');
+    if (statisticsBtn) {
+        statisticsBtn.addEventListener('click', () => {
+            moreActionsMenu.classList.add('hidden');
+            window.location.href = '/statistics';
+        });
+    }
+
     // Admin button
     const adminBtn = document.getElementById('admin-btn');
     if (adminBtn) {
