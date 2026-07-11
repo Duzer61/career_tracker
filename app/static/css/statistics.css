@@ -1,5 +1,12 @@
 /* Statistics page styles */
 
+/* Override layout.css — statistics page needs scrolling, not fixed viewport */
+.statistics-page #app-container {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+}
+
 .statistics-page {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;

@@ -199,10 +199,10 @@ function renderTimeChart(timeData) {
     }
 
     const labels = timeData.map(d => `${d.from_label} → ${d.to_label}`);
-    const avg = timeData.map(d => Math.round(d.avg_hours * 10) / 10);
-    const median = timeData.map(d => Math.round(d.median_hours * 10) / 10);
-    const min = timeData.map(d => Math.round(d.min_hours * 10) / 10);
-    const max = timeData.map(d => Math.round(d.max_hours * 10) / 10);
+    const avg = timeData.map(d => Math.round((d.avg_hours / 24) * 10) / 10);
+    const median = timeData.map(d => Math.round((d.median_hours / 24) * 10) / 10);
+    const min = timeData.map(d => Math.round((d.min_hours / 24) * 10) / 10);
+    const max = timeData.map(d => Math.round((d.max_hours / 24) * 10) / 10);
 
     timeChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -259,7 +259,7 @@ function renderTimeChart(timeData) {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return ` ${context.dataset.label}: ${context.parsed.x} ч`;
+                            return ` ${context.dataset.label}: ${context.parsed.x} д`;
                         }
                     }
                 }
@@ -269,7 +269,7 @@ function renderTimeChart(timeData) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Часы',
+                        text: 'Дни',
                         color: '#555',
                     },
                     grid: {
@@ -301,19 +301,19 @@ function renderTimeTable(timeData) {
         tr.innerHTML = `
             <td>${escapeHtml(d.from_label)}</td>
             <td>${escapeHtml(d.to_label)}</td>
-            <td>${formatHours(d.avg_hours)}</td>
-            <td>${formatHours(d.median_hours)}</td>
-            <td>${formatHours(d.min_hours)}</td>
-            <td>${formatHours(d.max_hours)}</td>
+            <td>${formatDays(d.avg_hours)}</td>
+            <td>${formatDays(d.median_hours)}</td>
+            <td>${formatDays(d.min_hours)}</td>
+            <td>${formatDays(d.max_hours)}</td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-function formatHours(hours) {
+function formatDays(hours) {
     if (hours === null || hours === undefined) return '—';
-    const val = Math.round(hours * 10) / 10;
-    return `${val} <span class="hours-unit">ч</span>`;
+    const days = Math.round((hours / 24) * 10) / 10;
+    return `${days} <span class="hours-unit">д</span>`;
 }
 
 async function loadStatistics(dateFrom, dateTo) {
