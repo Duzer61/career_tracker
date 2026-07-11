@@ -19,6 +19,7 @@ from app.schemas import (
     StatisticsSummary,
     UserCreate,
 )
+from app.statistics import compute_time_to_stage
 from app.utils import start_of_day, utc_now
 
 # User crud
@@ -446,44 +447,14 @@ async def _build_time_to_stage(
         )
     )
 
-    deltas: dict[tuple[ApplicationStatus, ApplicationStatus], list[float]] = defaultdict(list)
+    raw_rows: list[tuple[ApplicationStatus, float, float]] = []
     for row in rows:
         to_status = ApplicationStatus(row[0])
         prev_at: datetime = row[1]
         first_at: datetime = row[2]
-        delta_hours = (first_at - prev_at).total_seconds() / 3600
-        if delta_hours >= 0:
-            for from_s, to_s in status_pairs:
-                if to_s == to_status:
-                    deltas[(from_s, to_s)].append(delta_hours)
-                    break
+        raw_rows.append((to_status, prev_at.timestamp(), first_at.timestamp()))
 
-    time_to_stage: list[StageDuration] = []
-    for from_s, to_s in status_pairs:
-        d = deltas.get((from_s, to_s), [])
-        if not d:
-            continue
-        d_sorted = sorted(d)
-        n = len(d_sorted)
-        avg = round(sum(d_sorted) / n, 1)
-        median = (
-            round(d_sorted[n // 2], 1)
-            if n % 2 == 1
-            else round((d_sorted[n // 2 - 1] + d_sorted[n // 2]) / 2, 1)
-        )
-        time_to_stage.append(
-            StageDuration(
-                from_status=from_s,
-                to_status=to_s,
-                from_label=STATUS_LABELS[from_s],
-                to_label=STATUS_LABELS[to_s],
-                avg_hours=avg,
-                median_hours=median,
-                min_hours=round(d_sorted[0], 1),
-                max_hours=round(d_sorted[-1], 1),
-            )
-        )
-    return time_to_stage
+    return compute_time_to_stage(raw_rows)
 
 
 async def get_statistics(
