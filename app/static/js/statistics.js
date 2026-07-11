@@ -124,6 +124,11 @@ function renderFunnelChart(funnelData) {
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: true,
+            layout: {
+                padding: {
+                    right: 80,
+                },
+            },
             plugins: {
                 legend: { display: false },
                 tooltip: {
