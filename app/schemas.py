@@ -102,3 +102,41 @@ class ApplicationUpdate(ApplicationCreate):
     contacts: str | None = Field(None, max_length=500)
     vacancy_url: str | None = Field(None, max_length=500)
     status: ApplicationStatus | None = None
+
+
+# ─── Statistics schemas ───────────────────────────────────────────────────────
+
+
+class FunnelStage(BaseModel):
+    """Одна ступень воронки: статус, количество, конверсия."""
+
+    status: ApplicationStatus
+    status_label: str
+    count: int
+    pct_of_total: float
+    pct_of_previous: float | None = None
+
+
+class StageDuration(BaseModel):
+    """Среднее время перехода между двумя статусами."""
+
+    from_status: ApplicationStatus
+    to_status: ApplicationStatus
+    from_label: str
+    to_label: str
+    avg_hours: float
+    median_hours: float
+    min_hours: float
+    max_hours: float
+
+
+class StatisticsSummary(BaseModel):
+    """Агрегированная статистика: воронка + время прохождения + общие метрики."""
+
+    total_applications: int
+    active_applications: int
+    rejected_applications: int
+    ignored_applications: int
+    offer_applications: int
+    funnel: list[FunnelStage]
+    time_to_stage: list[StageDuration]

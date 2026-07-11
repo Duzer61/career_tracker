@@ -209,3 +209,4 @@ __marimo__/
 .env.bak
 .env.prod.bak
 .PLAYWRIGHT_SELECTORS.md
+.clinerules

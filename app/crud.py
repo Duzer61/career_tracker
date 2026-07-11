@@ -1,15 +1,24 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import asc, desc, select
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_password_hash
+from app.constants import FUNNEL_STATUSES, STATUS_LABELS, TERMINAL_STATUSES
 from app.db.models import Application, ApplicationStatus, ApplicationStatusHistory, User
-from app.schemas import ApplicationCreate, ApplicationUpdate, UserCreate
+from app.schemas import (
+    ApplicationCreate,
+    ApplicationUpdate,
+    FunnelStage,
+    StageDuration,
+    StatisticsSummary,
+    UserCreate,
+)
 from app.utils import start_of_day, utc_now
 
 # User crud
@@ -209,7 +218,6 @@ async def delete_status_history_entry(
             status_code=409,
             detail="Cannot delete history entry: at least 2 entries are required",
         )
-
     first_id = all_entries[0].id
     last_id = all_entries[-1].id
 
@@ -313,3 +321,215 @@ async def delete_application(application_id: int, db: AsyncSession, current_user
     except SQLAlchemyError as e:
         await db.rollback()
         raise ValueError(f"Error deleting application: {e}")
+
+
+# ─── Statistics ──────────────────────────────────────────────────────────────
+# Приватные функции разбиты для читаемости; каждая отвечает за один аспект.
+
+
+async def _get_general_metrics(
+    db: AsyncSession,
+    app_ids: list[int],
+) -> tuple[int, int, int, int]:
+    """
+    Return (active, rejected, ignored, offer) counts based on current statuses.
+    """
+    status_counts: dict[ApplicationStatus, int] = defaultdict(int)
+    rows = await db.execute(
+        select(Application.status, func.count(Application.id))
+        .where(Application.id.in_(app_ids))
+        .group_by(Application.status)
+    )
+    for row in rows:
+        status_counts[row[0]] = row[1]
+
+    active = sum(
+        count for status, count in status_counts.items() if status not in TERMINAL_STATUSES
+    )
+    rejected = status_counts.get(ApplicationStatus.REJECTED, 0) + status_counts.get(
+        ApplicationStatus.AUTO_REJECT, 0
+    )
+    ignored = status_counts.get(ApplicationStatus.IGNORED, 0)
+    offer = status_counts.get(ApplicationStatus.OFFER, 0)
+    return active, rejected, ignored, offer
+
+
+async def _build_funnel(
+    db: AsyncSession,
+    app_ids: list[int],
+    total: int,
+) -> list[FunnelStage]:
+    """
+    Count how many unique applications have ever reached each funnel status.
+    Returns list ordered by FUNNEL_STATUSES with conversion percentages.
+    """
+    funnel_counts: dict[ApplicationStatus, int] = defaultdict(int)
+    rows = await db.execute(
+        select(
+            ApplicationStatusHistory.status,
+            func.count(func.distinct(ApplicationStatusHistory.application_id)),
+        )
+        .where(ApplicationStatusHistory.application_id.in_(app_ids))
+        .group_by(ApplicationStatusHistory.status)
+    )
+    for row in rows:
+        funnel_counts[row[0]] = row[1]
+
+    funnel: list[FunnelStage] = []
+    previous_count: int | None = None
+    for fstatus in FUNNEL_STATUSES:
+        count = funnel_counts.get(fstatus, 0)
+        pct_of_total = round(count / total * 100, 1) if total > 0 else 0.0
+        pct_of_previous: float | None = None
+        if previous_count is not None and previous_count > 0:
+            pct_of_previous = round(count / previous_count * 100, 1)
+        funnel.append(
+            FunnelStage(
+                status=fstatus,
+                status_label=STATUS_LABELS[fstatus],
+                count=count,
+                pct_of_total=pct_of_total,
+                pct_of_previous=pct_of_previous,
+            )
+        )
+        previous_count = count
+    return funnel
+
+
+async def _build_time_to_stage(
+    db: AsyncSession,
+    app_ids: list[int],
+    total: int,
+) -> list[StageDuration]:
+    """
+    Calculate average, median, min, max hours for each pipeline status transition.
+    Uses CTE with LAG on first entry time per status per application.
+    """
+    status_pairs = list(zip(FUNNEL_STATUSES, FUNNEL_STATUSES[1:]))
+    if not status_pairs or total == 0:
+        return []
+
+    first_times = (
+        select(
+            ApplicationStatusHistory.application_id,
+            ApplicationStatusHistory.status,
+            func.min(ApplicationStatusHistory.changed_at).label("first_at"),
+        )
+        .where(ApplicationStatusHistory.application_id.in_(app_ids))
+        .group_by(
+            ApplicationStatusHistory.application_id,
+            ApplicationStatusHistory.status,
+        )
+        .cte("first_times")
+    )
+
+    with_lag = select(
+        first_times.c.application_id,
+        first_times.c.status,
+        first_times.c.first_at,
+        func.lag(first_times.c.first_at)
+        .over(
+            partition_by=first_times.c.application_id,
+            order_by=first_times.c.first_at,
+        )
+        .label("prev_at"),
+    ).cte("with_lag")
+
+    rows = await db.execute(
+        select(
+            with_lag.c.status,
+            with_lag.c.prev_at,
+            with_lag.c.first_at,
+        ).where(
+            with_lag.c.status.in_(FUNNEL_STATUSES),
+            with_lag.c.prev_at.isnot(None),
+        )
+    )
+
+    deltas: dict[tuple[ApplicationStatus, ApplicationStatus], list[float]] = defaultdict(list)
+    for row in rows:
+        to_status = ApplicationStatus(row[0])
+        prev_at: datetime = row[1]
+        first_at: datetime = row[2]
+        delta_hours = (first_at - prev_at).total_seconds() / 3600
+        if delta_hours >= 0:
+            for from_s, to_s in status_pairs:
+                if to_s == to_status:
+                    deltas[(from_s, to_s)].append(delta_hours)
+                    break
+
+    time_to_stage: list[StageDuration] = []
+    for from_s, to_s in status_pairs:
+        d = deltas.get((from_s, to_s), [])
+        if not d:
+            continue
+        d_sorted = sorted(d)
+        n = len(d_sorted)
+        avg = round(sum(d_sorted) / n, 1)
+        median = (
+            round(d_sorted[n // 2], 1)
+            if n % 2 == 1
+            else round((d_sorted[n // 2 - 1] + d_sorted[n // 2]) / 2, 1)
+        )
+        time_to_stage.append(
+            StageDuration(
+                from_status=from_s,
+                to_status=to_s,
+                from_label=STATUS_LABELS[from_s],
+                to_label=STATUS_LABELS[to_s],
+                avg_hours=avg,
+                median_hours=median,
+                min_hours=round(d_sorted[0], 1),
+                max_hours=round(d_sorted[-1], 1),
+            )
+        )
+    return time_to_stage
+
+
+async def get_statistics(
+    db: AsyncSession,
+    current_user: User,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+) -> StatisticsSummary:
+    """
+    Build statistics summary for the current user:
+    - funnel (conversion through pipeline statuses)
+    - time to stage (average/median/min/max hours between status transitions)
+    - general counts (total, active, rejected, ignored, offer)
+    """
+    # ── Subquery: application IDs for current user (with date filter) ──
+    app_ids_query = select(Application.id).where(Application.user_id == current_user.id)
+    if date_from is not None:
+        app_ids_query = app_ids_query.where(Application.created_at >= date_from)
+    if date_to is not None:
+        app_ids_query = app_ids_query.where(Application.created_at <= date_to)
+
+    result = await db.scalars(app_ids_query)
+    app_ids = list(result.all())
+    total = len(app_ids)
+
+    if total == 0:
+        return StatisticsSummary(
+            total_applications=0,
+            active_applications=0,
+            rejected_applications=0,
+            ignored_applications=0,
+            offer_applications=0,
+            funnel=[],
+            time_to_stage=[],
+        )
+
+    active, rejected, ignored, offer = await _get_general_metrics(db, app_ids)
+    funnel = await _build_funnel(db, app_ids, total)
+    time_to_stage = await _build_time_to_stage(db, app_ids, total)
+
+    return StatisticsSummary(
+        total_applications=total,
+        active_applications=active,
+        rejected_applications=rejected,
+        ignored_applications=ignored,
+        offer_applications=offer,
+        funnel=funnel,
+        time_to_stage=time_to_stage,
+    )

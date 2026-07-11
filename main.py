@@ -11,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.api.admin_routes import router as admin_router
 from app.api.applications_routers import router as board_router
 from app.api.auth_routers import router as auth_router
+from app.api.statistics_routers import router as statistics_router
 from app.api.user_routes import router as user_router
 from app.config import config as cf
 from app.db.database import check_db_connection, engine
@@ -82,6 +83,7 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(board_router)
 app.include_router(admin_router)
+app.include_router(statistics_router)
 
 
 if __name__ == "__main__":
