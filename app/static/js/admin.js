@@ -49,7 +49,9 @@ async function initAdmin() {
     document.getElementById('username-display').textContent = currentUser.login;
 
     // Setup event listeners
-    document.getElementById('logout-btn').addEventListener('click', handleLogout);
+    document.getElementById('logout-btn').addEventListener('click', showLogoutModal);
+    document.getElementById('cancel-logout-btn').addEventListener('click', closeLogoutModal);
+    document.getElementById('confirm-logout-btn').addEventListener('click', handleLogoutWithRedirect);
 
     searchInput.addEventListener('input', handleSearch);
     searchClearBtn.addEventListener('click', clearSearch);
@@ -92,6 +94,7 @@ async function initAdmin() {
         if (e.key === 'Escape') {
             closeDeleteModal();
             closeToggleAdminModal();
+            closeLogoutModal();
         }
     });
 
@@ -251,6 +254,7 @@ function closeModal(e) {
     // Close whichever modal is currently open
     closeDeleteModal();
     closeToggleAdminModal();
+    closeLogoutModal();
 }
 
 async function confirmToggleAdmin() {

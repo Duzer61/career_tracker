@@ -6,6 +6,7 @@
     <title>Статистика - Career Tracker</title>
     <link rel="stylesheet" href="/static/css/base.css">
     <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/modals.css">
     <link rel="stylesheet" href="/static/css/statistics.css">
     <link rel="stylesheet" href="/static/css/responsive.css">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
@@ -112,6 +113,23 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== Logout Confirmation Modal ====== -->
+    <div id="logout-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Подтверждение выхода</h2>
+                <button type="button" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body logout-modal-body">
+                <p>Вы действительно хотите выйти?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancel-logout-btn" class="btn-cancel">Отмена</button>
+                <button type="button" id="confirm-logout-btn" class="btn-save">Выйти</button>
             </div>
         </div>
     </div>

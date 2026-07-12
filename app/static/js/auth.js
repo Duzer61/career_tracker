@@ -179,3 +179,18 @@ async function handleLogout() {
         console.error('Logout error:', error);
     }
 }
+
+async function handleLogoutWithRedirect() {
+    closeLogoutModal();
+    try {
+        await fetch(`${API_BASE}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        currentUser = null;
+        window.location.href = '/';
+    } catch (error) {
+        console.error('Logout error:', error);
+        window.location.href = '/';
+    }
+}

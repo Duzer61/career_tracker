@@ -426,12 +426,25 @@ function initStatistics() {
         }
     });
 
+    // Close modal buttons
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            closeLogoutModal();
+        });
+    });
+
     // Logout
     const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) logoutBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('access_token');
-        localStorage.removeItem('access_token');
-        window.location.href = '/';
+    if (logoutBtn) logoutBtn.addEventListener('click', showLogoutModal);
+
+    document.getElementById('cancel-logout-btn').addEventListener('click', closeLogoutModal);
+    document.getElementById('confirm-logout-btn').addEventListener('click', handleLogoutWithRedirect);
+
+    // Close logout modal on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeLogoutModal();
+        }
     });
 
     // Load initial data
