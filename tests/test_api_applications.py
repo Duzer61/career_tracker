@@ -18,7 +18,11 @@ class TestApplicationsAPI:
         """Register and login a test user."""
         await client.post(
             self.REGISTER_URL,
-            json={"login": "apptestuser", "password": "StrongPass1"},
+            json={
+                "login": "apptestuser",
+                "password": "StrongPass1",
+                "password_confirm": "StrongPass1",
+            },
         )
         login_resp = await client.post(
             self.LOGIN_URL,

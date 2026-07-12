@@ -430,7 +430,11 @@ class TestStatisticsAPI:
         """Register and login a test user."""
         await client.post(
             self.REGISTER_URL,
-            json={"login": "stattestuser", "password": "StrongPass1"},
+            json={
+                "login": "stattestuser",
+                "password": "StrongPass1",
+                "password_confirm": "StrongPass1",
+            },
         )
         login_resp = await client.post(
             self.LOGIN_URL,

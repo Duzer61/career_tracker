@@ -25,14 +25,18 @@ class TestUserCRUD:
 
     async def test_create_user(self, test_session):
         """Should create a user and return it."""
-        user_data = UserCreate(login="newuser", password="StrongPass1")
+        user_data = UserCreate(
+            login="newuser", password="StrongPass1", password_confirm="StrongPass1"
+        )
         user = await create_user(test_session, user_data)
         assert user.login == "newuser"
         assert user.id is not None
 
     async def test_create_duplicate_user(self, test_session):
         """Should raise on duplicate login."""
-        user_data = UserCreate(login="dupuser", password="StrongPass1")
+        user_data = UserCreate(
+            login="dupuser", password="StrongPass1", password_confirm="StrongPass1"
+        )
         await create_user(test_session, user_data)
         with pytest.raises(ValueError, match="already exists"):
             await create_user(test_session, user_data)
