@@ -74,6 +74,14 @@ function setupEventListeners() {
         });
     }
 
+    // Statistics header button
+    const statisticsHeaderBtn = document.getElementById('statistics-header-btn');
+    if (statisticsHeaderBtn) {
+        statisticsHeaderBtn.addEventListener('click', () => {
+            window.location.href = '/statistics';
+        });
+    }
+
     // Filter toggle
     if (filterToggleBtn) {
         filterToggleBtn.addEventListener('click', () => {

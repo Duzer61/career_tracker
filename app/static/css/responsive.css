@@ -198,6 +198,23 @@
         background-image: none;
     }
 
+    /* Statistics button - mobile */
+    .btn-statistics {
+        font-size: 0;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .btn-statistics::before {
+        content: "📈";
+        font-size: 18px;
+    }
+
     /* Filter toggle button */
     .filter-toggle-btn {
         display: inline-flex !important;
