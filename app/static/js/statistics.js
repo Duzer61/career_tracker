@@ -81,6 +81,15 @@ function renderCounters(data) {
     if (offerEl) offerEl.textContent = data.offer_applications;
 }
 
+function shortenLabel(label) {
+    if (window.innerWidth >= 768) return label;
+    const map = {
+        'HR-интервью': 'HR',
+        'Техническое интервью': 'Тех.собес',
+    };
+    return map[label] || label;
+}
+
 function renderFunnelChart(funnelData) {
     if (!funnelData || funnelData.length === 0) return;
 
@@ -92,7 +101,7 @@ function renderFunnelChart(funnelData) {
         funnelChartInstance = null;
     }
 
-    const labels = funnelData.map(d => d.status_label);
+    const labels = funnelData.map(d => shortenLabel(d.status_label));
     const counts = funnelData.map(d => d.count);
     const pcts = funnelData.map(d => d.pct_of_previous);
 
@@ -162,6 +171,12 @@ function renderFunnelChart(funnelData) {
                 },
                 y: {
                     grid: { display: false },
+                    ticks: {
+                        autoSkip: false,
+                        font: {
+                            size: window.innerWidth < 768 ? 10 : 12,
+                        },
+                    },
                 }
             },
         },

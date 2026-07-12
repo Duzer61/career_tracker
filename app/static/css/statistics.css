@@ -227,3 +227,10 @@
     font-size: 12px;
     font-weight: 400;
 }
+
+/* Hide time chart on mobile (unreadable) */
+@media (max-width: 768px) {
+    #time-chart-card {
+        display: none;
+    }
+}
