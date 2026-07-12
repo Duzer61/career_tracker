@@ -256,87 +256,26 @@ class TestBuildTimeToStage:
         time_to_stage = await _build_time_to_stage(test_session, [app.id], 1)
         assert time_to_stage == []
 
-    async def test_single_transition(self, test_session, test_user):
-        """Should compute time-to-stage via compute_time_to_stage directly
-        to avoid SQLite LAG string issue."""
-        now = utc_now()
-        app = await create_application(
-            ApplicationCreate(company_name="Single", vacancy_name="V"),
-            test_session,
-            test_user,
-        )
-        # CREATED history was added at 'now'; add HR at now+2h
-        hr_at = now + timedelta(hours=2)
-        app_id = app.id
-
-        entry = ApplicationStatusHistory(
-            application_id=app_id,
-            status=ApplicationStatus.HR_INTERVIEW,
-            changed_at=hr_at,
-        )
-        test_session.add(entry)
-        await test_session.commit()
-
-        # Fetch created_at from DB to know exact time
-        created_at = app.created_at
-        delta_seconds = (hr_at - created_at).total_seconds()
-
-        # Test via pure function with manually constructed rows
-        rows = [
-            (ApplicationStatus.HR_INTERVIEW, created_at.timestamp(), hr_at.timestamp()),
-        ]
+    def test_single_transition(self):
+        """Should return correct stats for a single transition."""
+        # 2 hours = 7200 seconds delta
+        rows = [(ApplicationStatus.HR_INTERVIEW, 0.0, 7200.0)]
         result = compute_time_to_stage(rows)
-        assert len(result) >= 1
-        hr_entry = next(
-            (t for t in result if t.to_status == ApplicationStatus.HR_INTERVIEW),
-            None,
-        )
-        assert hr_entry is not None
-        expected_hours = round(delta_seconds / 3600, 2)
-        assert abs(hr_entry.avg_hours - expected_hours) < 0.1
+        assert len(result) == 1
+        entry = result[0]
+        assert entry.from_status == ApplicationStatus.CREATED
+        assert entry.to_status == ApplicationStatus.HR_INTERVIEW
+        assert entry.avg_hours == 2.0
+        assert entry.median_hours == 2.0
+        assert entry.min_hours == 2.0
+        assert entry.max_hours == 2.0
 
-    async def test_multiple_applications_different_times(self, test_session, test_user):
+    def test_multiple_applications_different_times(self):
         """Should compute avg/median/min/max via compute_time_to_stage directly."""
-        now = utc_now()
-
-        app1 = await create_application(
-            ApplicationCreate(company_name="Fast", vacancy_name="V"),
-            test_session,
-            test_user,
-        )
-        app2 = await create_application(
-            ApplicationCreate(company_name="Slow", vacancy_name="V"),
-            test_session,
-            test_user,
-        )
-
-        # App1: CREATED→HR in 1h
-        app1_hr = now + timedelta(hours=1)
-        test_session.add(
-            ApplicationStatusHistory(
-                application_id=app1.id,
-                status=ApplicationStatus.HR_INTERVIEW,
-                changed_at=app1_hr,
-            )
-        )
-
-        # App2: CREATED→HR in 5h
-        app2_hr = now + timedelta(hours=5)
-        test_session.add(
-            ApplicationStatusHistory(
-                application_id=app2.id,
-                status=ApplicationStatus.HR_INTERVIEW,
-                changed_at=app2_hr,
-            )
-        )
-        await test_session.commit()
-
-        # Test via pure function
-        a1_created = app1.created_at.timestamp()
-        a2_created = app2.created_at.timestamp()
+        # 1 hour, 5 hours → avg=3, min=1, max=5
         rows = [
-            (ApplicationStatus.HR_INTERVIEW, a1_created, app1_hr.timestamp()),
-            (ApplicationStatus.HR_INTERVIEW, a2_created, app2_hr.timestamp()),
+            (ApplicationStatus.HR_INTERVIEW, 0.0, 3600.0),
+            (ApplicationStatus.HR_INTERVIEW, 0.0, 18000.0),
         ]
         result = compute_time_to_stage(rows)
         hr_entry = next(
@@ -365,7 +304,7 @@ class TestGetStatistics:
         assert stats.time_to_stage == []
 
     @patch("app.crud._build_time_to_stage", return_value=[])
-    async def test_full_statistics(self, mock_build, test_session, test_user):
+    async def test_full_statistics(self, _, test_session, test_user):
         """Should return correct statistics with mixed applications."""
         # Create 3 applications with varying statuses
         await create_application(
