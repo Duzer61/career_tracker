@@ -24,12 +24,18 @@
         <div class="main-content">
             <!-- Date filter -->
             <div class="stat-date-filter">
-                <label for="date-from">с</label>
-                <input type="date" id="date-from">
-                <label for="date-to">по</label>
-                <input type="date" id="date-to">
-                <button id="apply-date-btn" class="btn-apply">Применить</button>
-                <button id="reset-date-btn" class="btn-reset">Сброс</button>
+                <div class="date-group">
+                    <label for="date-from">с</label>
+                    <input type="date" id="date-from">
+                </div>
+                <div class="date-group">
+                    <label for="date-to">по</label>
+                    <input type="date" id="date-to">
+                </div>
+                <div class="date-actions">
+                    <button id="apply-date-btn" class="btn-apply">Применить</button>
+                    <button id="reset-date-btn" class="btn-reset">Сброс</button>
+                </div>
             </div>
 
             <!-- Loading indicator -->
