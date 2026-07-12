@@ -260,12 +260,21 @@
         font-size: 14px;
     }
 
-    /* Home icon button - compact on mobile */
-    .admin-page .header-right a.btn-home-icon {
+    /* Home button - compact on mobile (icon only) */
+    .admin-page .header-right a.btn-home {
+        font-size: 0;
         padding: 8px 10px;
-        font-size: 16px;
         min-width: 36px;
         min-height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .admin-page .header-right a.btn-home::before {
+        content: "🏠";
+        font-size: 16px;
     }
 
     /* Logout button - compact */
@@ -329,6 +338,22 @@
 
 /* ====== Statistics page mobile ====== */
 @media (max-width: 768px) {
+    .statistics-page .header-right a.btn-home {
+        font-size: 0;
+        padding: 8px 10px;
+        min-width: 36px;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .statistics-page .header-right a.btn-home::before {
+        content: "🏠";
+        font-size: 16px;
+    }
+
     .statistics-page .toolbar {
         flex-wrap: wrap;
         gap: 8px;

@@ -253,6 +253,27 @@
     background: #e0e0e0;
 }
 
+/* Home button — secondary style with icon + text */
+.header-right a.btn-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: #f0f0f0;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+    text-decoration: none;
+}
+
+.header-right a.btn-home:hover {
+    background: #e0e0e0;
+}
+
 .custom-range .btn-secondary {
     padding: 5px 12px;
     font-size: 13px;
