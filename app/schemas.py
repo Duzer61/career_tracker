@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.db.models import ApplicationStatus
 
@@ -13,6 +13,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    password_confirm: str
     captcha_token: str = ""
 
     @field_validator("password")
@@ -30,6 +31,12 @@ class UserCreate(UserBase):
         if errors:
             raise ValueError(" ".join(errors))
         return v
+
+    @model_validator(mode="after")
+    def passwords_match(self) -> "UserCreate":
+        if self.password != self.password_confirm:
+            raise ValueError("Пароли не совпадают")
+        return self
 
 
 class UserLogin(UserBase):

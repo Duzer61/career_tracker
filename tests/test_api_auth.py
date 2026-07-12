@@ -14,7 +14,7 @@ class TestRegister:
         """Should register a new user, set cookies, and return user data with message."""
         response = await client.post(
             self.REGISTER_URL,
-            json={"login": "newuser", "password": "StrongPass1"},
+            json={"login": "newuser", "password": "StrongPass1", "password_confirm": "StrongPass1"},
         )
         assert response.status_code == 201
         data = response.json()
@@ -32,11 +32,11 @@ class TestRegister:
         """Should return 400 when registering with an existing login."""
         await client.post(
             self.REGISTER_URL,
-            json={"login": "dupuser", "password": "StrongPass1"},
+            json={"login": "dupuser", "password": "StrongPass1", "password_confirm": "StrongPass1"},
         )
         response = await client.post(
             self.REGISTER_URL,
-            json={"login": "dupuser", "password": "StrongPass1"},
+            json={"login": "dupuser", "password": "StrongPass1", "password_confirm": "StrongPass1"},
         )
         assert response.status_code == 400
         assert "already exists" in response.json()["detail"]
@@ -45,9 +45,22 @@ class TestRegister:
         """Should return 422 for a weak password."""
         response = await client.post(
             self.REGISTER_URL,
-            json={"login": "weakuser", "password": "short"},
+            json={"login": "weakuser", "password": "short", "password_confirm": "short"},
         )
         assert response.status_code == 422
+
+    async def test_register_password_mismatch(self, client):
+        """Should return 422 when password and password_confirm do not match."""
+        response = await client.post(
+            self.REGISTER_URL,
+            json={
+                "login": "mismatchuser",
+                "password": "StrongPass1",
+                "password_confirm": "DifferentPass1",
+            },
+        )
+        assert response.status_code == 422
+        assert "Пароли не совпадают" in response.text
 
 
 class TestLogin:
@@ -58,7 +71,10 @@ class TestLogin:
 
     async def _register_and_login(self, client, login="logintest", password="StrongPass1"):
         """Register a user and return login response."""
-        await client.post(self.REGISTER_URL, json={"login": login, "password": password})
+        await client.post(
+            self.REGISTER_URL,
+            json={"login": login, "password": password, "password_confirm": password},
+        )
         return await client.post(self.LOGIN_URL, json={"login": login, "password": password})
 
     async def test_login_success(self, client):
@@ -73,7 +89,14 @@ class TestLogin:
 
     async def test_login_wrong_password(self, client):
         """Should return 401 for wrong password."""
-        await client.post(self.REGISTER_URL, json={"login": "failuser", "password": "StrongPass1"})
+        await client.post(
+            self.REGISTER_URL,
+            json={
+                "login": "failuser",
+                "password": "StrongPass1",
+                "password_confirm": "StrongPass1",
+            },
+        )
         response = await client.post(
             self.LOGIN_URL, json={"login": "failuser", "password": "WrongPass1"}
         )
@@ -96,7 +119,10 @@ class TestRefresh:
 
     async def _login_and_get_cookies(self, client, login="refreshtest", password="StrongPass1"):
         """Register, login, and return response with cookies."""
-        await client.post(self.REGISTER_URL, json={"login": login, "password": password})
+        await client.post(
+            self.REGISTER_URL,
+            json={"login": login, "password": password, "password_confirm": password},
+        )
         response = await client.post(self.LOGIN_URL, json={"login": login, "password": password})
         return response
 
@@ -133,7 +159,12 @@ class TestLogout:
     async def test_logout_success(self, client):
         """Should logout and delete cookies."""
         await client.post(
-            self.REGISTER_URL, json={"login": "logoutuser", "password": "StrongPass1"}
+            self.REGISTER_URL,
+            json={
+                "login": "logoutuser",
+                "password": "StrongPass1",
+                "password_confirm": "StrongPass1",
+            },
         )
         login_resp = await client.post(
             self.LOGIN_URL, json={"login": "logoutuser", "password": "StrongPass1"}
@@ -147,7 +178,12 @@ class TestLogout:
     async def test_logout_all_success(self, client):
         """Should logout from all devices and delete cookies."""
         await client.post(
-            self.REGISTER_URL, json={"login": "logoutalluser", "password": "StrongPass1"}
+            self.REGISTER_URL,
+            json={
+                "login": "logoutalluser",
+                "password": "StrongPass1",
+                "password_confirm": "StrongPass1",
+            },
         )
         login_resp = await client.post(
             self.LOGIN_URL, json={"login": "logoutalluser", "password": "StrongPass1"}
@@ -177,7 +213,10 @@ class TestSuperAdmin:
 
     async def _create_user_and_login(self, client, login: str, password="StrongPass1"):
         """Register a user and return client with cookies set."""
-        await client.post(self.REGISTER_URL, json={"login": login, "password": password})
+        await client.post(
+            self.REGISTER_URL,
+            json={"login": login, "password": password, "password_confirm": password},
+        )
         resp = await client.post(self.LOGIN_URL, json={"login": login, "password": password})
         set_client_cookies(client, resp)
         return resp
@@ -221,10 +260,20 @@ class TestSuperAdmin:
         """Superadmin should be able to set/unset admin status for another user."""
         # Create superadmin user and target user
         await client.post(
-            self.REGISTER_URL, json={"login": "superadmin", "password": "StrongPass1"}
+            self.REGISTER_URL,
+            json={
+                "login": "superadmin",
+                "password": "StrongPass1",
+                "password_confirm": "StrongPass1",
+            },
         )
         await client.post(
-            self.REGISTER_URL, json={"login": "targetuser", "password": "StrongPass1"}
+            self.REGISTER_URL,
+            json={
+                "login": "targetuser",
+                "password": "StrongPass1",
+                "password_confirm": "StrongPass1",
+            },
         )
 
         # Login as superadmin

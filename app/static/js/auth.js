@@ -103,9 +103,15 @@ async function handleLogin(e) {
             await checkAuth();
         } else {
             resetCaptcha('login-captcha-container');
-            const detail = typeof data.detail === 'string'
-                ? data.detail
-                : (data.detail?.message || 'Ошибка входа');
+            let detail;
+            if (typeof data.detail === 'string') {
+                detail = data.detail;
+            } else if (Array.isArray(data.detail)) {
+                const messages = data.detail.map(e => e.msg.replace(/^Value error, /, ''));
+                detail = messages.join('; ');
+            } else {
+                detail = 'Ошибка входа';
+            }
             messageEl.textContent = detail;
         }
     } catch (err) {
@@ -118,6 +124,7 @@ async function handleRegister(e) {
     e.preventDefault();
     const login = document.getElementById('register-login').value;
     const password = document.getElementById('register-password').value;
+    const passwordConfirm = document.getElementById('register-password-confirm').value;
     const messageEl = document.getElementById('auth-message');
 
     const captchaToken = getCaptchaToken('register-captcha-container');
@@ -126,7 +133,7 @@ async function handleRegister(e) {
         const response = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ login, password, captcha_token: captchaToken })
+            body: JSON.stringify({ login, password, password_confirm: passwordConfirm, captcha_token: captchaToken })
         });
 
         const data = await response.json();
@@ -136,9 +143,15 @@ async function handleRegister(e) {
             await checkAuth();
         } else {
             resetCaptcha('register-captcha-container');
-            const detail = typeof data.detail === 'string'
-                ? data.detail
-                : (data.detail?.message || 'Ошибка регистрации');
+            let detail;
+            if (typeof data.detail === 'string') {
+                detail = data.detail;
+            } else if (Array.isArray(data.detail)) {
+                const messages = data.detail.map(e => e.msg.replace(/^Value error, /, ''));
+                detail = messages.join('; ');
+            } else {
+                detail = 'Ошибка регистрации';
+            }
             messageEl.textContent = detail;
         }
     } catch (err) {
