@@ -126,8 +126,10 @@ class TestGetGeneralMetrics:
 
     async def test_empty_ids(self, test_session, test_user):
         """Should return zeros for empty app_ids."""
-        active, rejected, ignored, offer = await _get_general_metrics(test_session, [])
-        assert (active, rejected, ignored, offer) == (0, 0, 0, 0)
+        active, rejected, auto_rejected, ignored, offer = await _get_general_metrics(
+            test_session, []
+        )
+        assert (active, rejected, auto_rejected, ignored, offer) == (0, 0, 0, 0, 0)
 
     async def test_all_active(self, test_session, test_user):
         """All applications in non-terminal statuses."""
@@ -138,11 +140,12 @@ class TestGetGeneralMetrics:
             ApplicationCreate(company_name="A2", vacancy_name="V2"), test_session, test_user
         )
         # Both are CREATED → active
-        active, rejected, ignored, offer = await _get_general_metrics(
+        active, rejected, auto_rejected, ignored, offer = await _get_general_metrics(
             test_session, [app1.id, app2.id]
         )
         assert active == 2
         assert rejected == 0
+        assert auto_rejected == 0
         assert ignored == 0
         assert offer == 0
 
@@ -164,12 +167,13 @@ class TestGetGeneralMetrics:
         apps["auto_reject"].status = ApplicationStatus.AUTO_REJECT
         await test_session.commit()
 
-        active, rejected, ignored, offer = await _get_general_metrics(
+        active, rejected, auto_rejected, ignored, offer = await _get_general_metrics(
             test_session, list(a.id for a in apps.values())
         )
         # CREATED + OFFER are both non-terminal → 2 active
         assert active == 2
-        assert rejected == 2  # REJECTED + AUTO_REJECT
+        assert rejected == 1  # REJECTED
+        assert auto_rejected == 1  # AUTO_REJECT
         assert ignored == 1
         assert offer == 1
 
@@ -298,6 +302,7 @@ class TestGetStatistics:
         assert stats.total_applications == 0
         assert stats.active_applications == 0
         assert stats.rejected_applications == 0
+        assert stats.auto_rejected_applications == 0
         assert stats.ignored_applications == 0
         assert stats.offer_applications == 0
         assert stats.funnel == []
@@ -547,6 +552,7 @@ class TestStatisticsAPI:
         assert "total_applications" in data
         assert "active_applications" in data
         assert "rejected_applications" in data
+        assert "auto_rejected_applications" in data
         assert "ignored_applications" in data
         assert "offer_applications" in data
         assert "funnel" in data

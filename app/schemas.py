@@ -143,6 +143,7 @@ class StatisticsSummary(BaseModel):
     total_applications: int
     active_applications: int
     rejected_applications: int
+    auto_rejected_applications: int
     ignored_applications: int
     offer_applications: int
     funnel: list[FunnelStage]

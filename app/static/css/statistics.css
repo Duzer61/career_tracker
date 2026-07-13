@@ -125,6 +125,7 @@
 .stat-card--total .stat-card__value { color: #667eea; }
 .stat-card--active .stat-card__value { color: #27ae60; }
 .stat-card--rejected .stat-card__value { color: #e74c3c; }
+.stat-card--auto-rejected .stat-card__value { color: #d35400; }
 .stat-card--ignored .stat-card__value { color: #999; }
 .stat-card--offer .stat-card__value { color: #f39c12; }
 

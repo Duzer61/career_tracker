@@ -24,7 +24,7 @@ function formatDateInput(date) {
 // DOM references
 let dateFromInput, dateToInput, applyBtn, resetBtn;
 let statLoading, statError, statEmpty, statContent;
-let totalEl, activeEl, rejectedEl, ignoredEl, offerEl;
+let totalEl, activeEl, rejectedEl, autoRejectedEl, ignoredEl, offerEl;
 
 function initStatDomRefs() {
     dateFromInput = document.getElementById('date-from');
@@ -38,6 +38,7 @@ function initStatDomRefs() {
     totalEl = document.getElementById('stat-total');
     activeEl = document.getElementById('stat-active');
     rejectedEl = document.getElementById('stat-rejected');
+    autoRejectedEl = document.getElementById('stat-auto-rejected');
     ignoredEl = document.getElementById('stat-ignored');
     offerEl = document.getElementById('stat-offer');
 }
@@ -77,6 +78,7 @@ function renderCounters(data) {
     if (totalEl) totalEl.textContent = data.total_applications;
     if (activeEl) activeEl.textContent = data.active_applications;
     if (rejectedEl) rejectedEl.textContent = data.rejected_applications;
+    if (autoRejectedEl) autoRejectedEl.textContent = data.auto_rejected_applications;
     if (ignoredEl) ignoredEl.textContent = data.ignored_applications;
     if (offerEl) offerEl.textContent = data.offer_applications;
 }

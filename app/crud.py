@@ -331,9 +331,9 @@ async def delete_application(application_id: int, db: AsyncSession, current_user
 async def _get_general_metrics(
     db: AsyncSession,
     app_ids: list[int],
-) -> tuple[int, int, int, int]:
+) -> tuple[int, int, int, int, int]:
     """
-    Return (active, rejected, ignored, offer) counts based on current statuses.
+    Return (active, rejected, auto_rejected, ignored, offer) counts based on current statuses.
     """
     status_counts: dict[ApplicationStatus, int] = defaultdict(int)
     rows = await db.execute(
@@ -347,12 +347,11 @@ async def _get_general_metrics(
     active = sum(
         count for status, count in status_counts.items() if status not in TERMINAL_STATUSES
     )
-    rejected = status_counts.get(ApplicationStatus.REJECTED, 0) + status_counts.get(
-        ApplicationStatus.AUTO_REJECT, 0
-    )
+    rejected = status_counts.get(ApplicationStatus.REJECTED, 0)
+    auto_rejected = status_counts.get(ApplicationStatus.AUTO_REJECT, 0)
     ignored = status_counts.get(ApplicationStatus.IGNORED, 0)
     offer = status_counts.get(ApplicationStatus.OFFER, 0)
-    return active, rejected, ignored, offer
+    return active, rejected, auto_rejected, ignored, offer
 
 
 async def _build_funnel(
@@ -485,13 +484,14 @@ async def get_statistics(
             total_applications=0,
             active_applications=0,
             rejected_applications=0,
+            auto_rejected_applications=0,
             ignored_applications=0,
             offer_applications=0,
             funnel=[],
             time_to_stage=[],
         )
 
-    active, rejected, ignored, offer = await _get_general_metrics(db, app_ids)
+    active, rejected, auto_rejected, ignored, offer = await _get_general_metrics(db, app_ids)
     funnel = await _build_funnel(db, app_ids, total)
     time_to_stage = await _build_time_to_stage(db, app_ids, total)
 
@@ -499,6 +499,7 @@ async def get_statistics(
         total_applications=total,
         active_applications=active,
         rejected_applications=rejected,
+        auto_rejected_applications=auto_rejected,
         ignored_applications=ignored,
         offer_applications=offer,
         funnel=funnel,
