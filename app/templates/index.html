@@ -14,6 +14,25 @@
     <link rel="stylesheet" href="/static/css/responsive.css">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 
+    <!-- SEO -->
+    <meta name="description" content="Career Tracker — приложение для отслеживания статусов откликов на вакансии. Управляйте поиском работы в удобном канбан-формате.">
+    <meta name="keywords" content="поиск работы, отслеживание откликов, карьерный трекер, управление вакансиями, канбан">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ request.url }}">
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Career Tracker",
+      "description": "Приложение для отслеживания статусов откликов на вакансии",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Any",
+      "inLanguage": "ru"
+    }
+    </script>
+
     <!-- Open Graph / Social Preview -->
     <meta property="og:title" content="Career Tracker - Карьерный монитор">
     <meta property="og:description" content="Приложение для отслеживания статусов откликов на вакансии">
