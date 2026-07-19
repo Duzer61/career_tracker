@@ -18,6 +18,21 @@ def end_of_day(dt: datetime) -> datetime:
     return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
 
 
+def validate_password_strength(v: str) -> str:
+    """Validate password strength: min 8 chars, upper, lower, digit, ASCII only."""
+    rules = [
+        (len(v) >= 8, "Пароль должен содержать минимум 8 символов."),
+        (any(c.islower() for c in v), "Пароль должен содержать хотя бы одну строчную букву."),
+        (any(c.isupper() for c in v), "Пароль должен содержать хотя бы одну заглавную букву."),
+        (any(c.isdigit() for c in v), "Пароль должен содержать хотя бы одну цифру."),
+        (v.isascii(), "Пароль должен содержать только символы ASCII."),
+    ]
+    errors = [msg for is_valid, msg in rules if not is_valid]
+    if errors:
+        raise ValueError(" ".join(errors))
+    return v
+
+
 def parse_date_filters(
     period: str | None,
     date_from: str | None,

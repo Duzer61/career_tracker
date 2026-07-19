@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.db.models import ApplicationStatus
+from app.utils import validate_password_strength
 
 # User schemas
 
@@ -19,18 +20,7 @@ class UserCreate(UserBase):
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
-        rules = [
-            (len(v) >= 8, "Пароль должен содержать минимум 8 символов."),
-            (any(c.islower() for c in v), "Пароль должен содержать хотя бы одну строчную букву."),
-            (any(c.isupper() for c in v), "Пароль должен содержать хотя бы одну заглавную букву."),
-            (any(c.isdigit() for c in v), "Пароль должен содержать хотя бы одну цифру."),
-            (v.isascii(), "Пароль должен содержать только символы ASCII."),
-        ]
-
-        errors = [msg for is_valid, msg in rules if not is_valid]
-        if errors:
-            raise ValueError(" ".join(errors))
-        return v
+        return validate_password_strength(v)
 
     @model_validator(mode="after")
     def passwords_match(self) -> "UserCreate":
@@ -69,6 +59,29 @@ class AccessTokenSchema(BaseModel):
 
 class AdminActionRequest(BaseModel):
     is_admin: bool
+
+
+class PasswordChangeRequest(BaseModel):
+    old_password: str
+    new_password: str
+    new_password_confirm: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        return validate_password_strength(v)
+
+    @model_validator(mode="after")
+    def passwords_match(self) -> "PasswordChangeRequest":
+        if self.new_password != self.new_password_confirm:
+            raise ValueError("Новые пароли не совпадают")
+        return self
+
+    @model_validator(mode="after")
+    def old_and_new_different(self) -> "PasswordChangeRequest":
+        if self.old_password == self.new_password:
+            raise ValueError("Новый пароль должен отличаться от старого")
+        return self
 
 
 class ApplicationResponse(BaseModel):

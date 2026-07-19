@@ -2,12 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.auth import (
     authenticate_user,
+    change_user_password,
     create_access_and_refresh_tokens,
     delete_all_user_sessions,
     delete_refresh_token_and_session_id,
+    get_current_user_with_session_id,
     get_user_by_login,
     refresh_tokens,
     set_cookie,
+    verify_password,
 )
 from app.captcha import verify_smartcaptcha
 from app.config import config as cf
@@ -15,7 +18,7 @@ from app.crud import create_user
 from app.db.database import SessionDep
 from app.db.models import User
 from app.rate_limit import rate_limit_login
-from app.schemas import UserCreate, UserLogin, UserResponse
+from app.schemas import PasswordChangeRequest, UserCreate, UserLogin, UserResponse
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
@@ -125,3 +128,32 @@ async def logout_all_devises(request: Request, response: Response):
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
     return {"message": "Logged out from all devices"}
+
+
+@router.post("/change-password")
+async def change_password(
+    request: Request,
+    response: Response,
+    password_data: PasswordChangeRequest,
+    db: SessionDep,
+    user_with_session: tuple[User, str] = Depends(get_current_user_with_session_id),
+):
+    """
+    Change user password. Validates old password, updates to new one,
+    revokes all other sessions but keeps the current one alive.
+    """
+    user, session_id = user_with_session
+
+    if not verify_password(password_data.old_password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неверный старый пароль",
+        )
+
+    await change_user_password(db, user, password_data.new_password, session_id)
+
+    # Re-issue tokens for the current session so the user stays logged in
+    access_token, refresh_token = await create_access_and_refresh_tokens(user.login, session_id)
+    await set_cookie(response, access_token, refresh_token)
+
+    return {"message": "Пароль успешно изменён"}

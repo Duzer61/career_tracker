@@ -8,6 +8,7 @@ from jose import jwt
 from jose.exceptions import JWTError
 from passlib.context import CryptContext
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import config as cf
@@ -240,6 +241,24 @@ async def delete_all_user_sessions(request: Request) -> None:
         await delete_all_user_sessions_by_username(username)
 
 
+async def delete_all_user_sessions_except_current(username: str, current_session_id: str) -> None:
+    """
+    Delete all sessions for a user, except the one identified by current_session_id.
+    Used when changing password — keeps the current device logged in.
+    """
+    redis = await redis_client.get_client()
+    session_key = f"user_sessions:{username}"
+    sessions = await redis.smembers(session_key)
+
+    # Iterate over a copy to avoid "Set changed size during iteration"
+    for session_id in list(sessions):
+        if session_id == current_session_id:
+            continue
+        key = f"refresh_token:{username}:{session_id}"
+        await redis.delete(key)
+        await redis.srem(session_key, session_id)
+
+
 async def delete_all_user_sessions_by_username(username: str) -> None:
     """
     Delete all refresh tokens and session IDs for a user by username.
@@ -254,6 +273,25 @@ async def delete_all_user_sessions_by_username(username: str) -> None:
         await redis.delete(key)
     # Remove all session IDs
     await redis.delete(session_key)
+
+
+async def change_user_password(
+    db: AsyncSession, user: User, new_password: str, current_session_id: str
+) -> None:
+    """
+    Change user password, delete all remote sessions, keep current session alive.
+    """
+    user.hashed_password = get_password_hash(new_password)
+    try:
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при смене пароля: {e}",
+        )
+    # Revoke all other sessions so other devices must re-login
+    await delete_all_user_sessions_except_current(user.login, current_session_id)
 
 
 async def get_user_by_login(db: AsyncSession, login: str) -> User | None:

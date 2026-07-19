@@ -310,3 +310,178 @@ class TestSuperAdmin:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
+
+
+class TestChangePassword:
+    """Tests for POST /api/auth/change-password."""
+
+    REGISTER_URL = "/api/auth/register"
+    LOGIN_URL = "/api/auth/login"
+    CHANGE_URL = "/api/auth/change-password"
+    ME_URL = "/api/users/me"
+
+    async def _register_and_login(self, client, login="changepwuser", password="StrongPass1"):
+        """Register, login and set client cookies."""
+        await client.post(
+            self.REGISTER_URL,
+            json={"login": login, "password": password, "password_confirm": password},
+        )
+        resp = await client.post(self.LOGIN_URL, json={"login": login, "password": password})
+        set_client_cookies(client, resp)
+        return resp
+
+    async def test_change_password_success(self, client):
+        """Should change password successfully and keep current session alive."""
+        await self._register_and_login(client)
+        response = await client.post(
+            self.CHANGE_URL,
+            json={
+                "old_password": "StrongPass1",
+                "new_password": "NewStrongPass1",
+                "new_password_confirm": "NewStrongPass1",
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["message"] == "Пароль успешно изменён"
+
+        # New cookies should be set (session re-issued)
+        cookies = dict(response.cookies)
+        assert "access_token" in cookies
+        assert "refresh_token" in cookies
+
+        # Current session should still work — can access /api/users/me
+        resp = await client.get(self.ME_URL)
+        assert resp.status_code == 200
+        assert resp.json()["login"] == "changepwuser"
+
+        # Old password should no longer work
+        await client.post(self.LOGIN_URL, json={"login": "changepwuser", "password": "StrongPass1"})
+        # Login with new password should work
+        resp2 = await client.post(
+            self.LOGIN_URL, json={"login": "changepwuser", "password": "NewStrongPass1"}
+        )
+        assert resp2.status_code == 200
+
+    async def test_change_password_wrong_old_password(self, client):
+        """Should return 400 when old password is incorrect."""
+        await self._register_and_login(client)
+        response = await client.post(
+            self.CHANGE_URL,
+            json={
+                "old_password": "WrongOldPass1",
+                "new_password": "NewStrongPass1",
+                "new_password_confirm": "NewStrongPass1",
+            },
+        )
+        assert response.status_code == 400
+        assert "Неверный старый пароль" in response.json()["detail"]
+
+    async def test_change_password_weak_new_password(self, client):
+        """Should return 422 when new password is too weak."""
+        await self._register_and_login(client)
+        response = await client.post(
+            self.CHANGE_URL,
+            json={
+                "old_password": "StrongPass1",
+                "new_password": "weak",
+                "new_password_confirm": "weak",
+            },
+        )
+        assert response.status_code == 422
+
+    async def test_change_password_mismatch(self, client):
+        """Should return 422 when new passwords do not match."""
+        await self._register_and_login(client)
+        response = await client.post(
+            self.CHANGE_URL,
+            json={
+                "old_password": "StrongPass1",
+                "new_password": "NewStrongPass1",
+                "new_password_confirm": "DifferentPass1",
+            },
+        )
+        assert response.status_code == 422
+        assert "Новые пароли не совпадают" in response.text
+
+    async def test_change_password_same_as_old(self, client):
+        """Should return 422 when new password is same as old."""
+        await self._register_and_login(client)
+        response = await client.post(
+            self.CHANGE_URL,
+            json={
+                "old_password": "StrongPass1",
+                "new_password": "StrongPass1",
+                "new_password_confirm": "StrongPass1",
+            },
+        )
+        assert response.status_code == 422
+        assert "должен отличаться" in response.text
+
+    async def test_change_password_requires_auth(self, client):
+        """Should return 401 when not authenticated."""
+        response = await client.post(
+            self.CHANGE_URL,
+            json={
+                "old_password": "StrongPass1",
+                "new_password": "NewStrongPass1",
+                "new_password_confirm": "NewStrongPass1",
+            },
+        )
+        assert response.status_code == 401
+
+    async def test_change_password_revokes_other_sessions(self, client):
+        """Should revoke other sessions — only current session stays valid."""
+        # Register user
+        await client.post(
+            self.REGISTER_URL,
+            json={
+                "login": "changepwuser",
+                "password": "StrongPass1",
+                "password_confirm": "StrongPass1",
+            },
+        )
+
+        # First login — captures session A cookies
+        login_a_resp = await client.post(
+            self.LOGIN_URL, json={"login": "changepwuser", "password": "StrongPass1"}
+        )
+        cookies_session_a = dict(login_a_resp.cookies)
+
+        # Second login — session B becomes current
+        login_b_resp = await client.post(
+            self.LOGIN_URL, json={"login": "changepwuser", "password": "StrongPass1"}
+        )
+        set_client_cookies(client, login_b_resp)
+
+        # Change password — session A should be revoked, session B stays
+        resp = await client.post(
+            self.CHANGE_URL,
+            json={
+                "old_password": "StrongPass1",
+                "new_password": "NewStrongPass1",
+                "new_password_confirm": "NewStrongPass1",
+            },
+        )
+        assert resp.status_code == 200
+        set_client_cookies(client, resp)
+
+        # Session A (old tokens) should be revoked
+        # Clear client cookies so only the manually set header is sent
+        client.cookies.clear()
+        response = await client.get(
+            self.ME_URL,
+            headers={
+                "Cookie": (
+                    f"access_token={cookies_session_a.get('access_token', '')}; "
+                    f"refresh_token={cookies_session_a.get('refresh_token', '')}"
+                )
+            },
+        )
+        assert response.status_code == 401
+        assert "revoked" in response.json()["detail"].lower()
+
+        # Current session (B) should still work
+        set_client_cookies(client, resp)
+        resp_me = await client.get(self.ME_URL)
+        assert resp_me.status_code == 200
+        assert resp_me.json()["login"] == "changepwuser"
