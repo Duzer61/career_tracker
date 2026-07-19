@@ -113,6 +113,7 @@
                 <div id="more-actions-menu" class="dropdown-menu hidden">
                     <button id="auto-ignore-btn">Перенести старые отклики в игнор</button>
                     <button id="statistics-btn">Статистика</button>
+                    <button id="change-password-btn">Сменить пароль</button>
                     <button id="admin-btn" class="admin-only">Админка</button>
                 </div>
             </div>
@@ -261,6 +262,36 @@
             <div class="modal-footer">
                 <button type="button" id="cancel-auto-ignore-btn" class="btn-cancel">Отмена</button>
                 <button type="button" id="confirm-auto-ignore-btn" class="btn-save">Перенести</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="change-password-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Смена пароля</h2>
+                <button type="button" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="change-password-form">
+                    <div class="form-group">
+                        <label for="old-password">Старый пароль</label>
+                        <input type="password" id="old-password" placeholder="Введите старый пароль" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">Новый пароль</label>
+                        <input type="password" id="new-password" placeholder="Введите новый пароль" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password-confirm">Подтверждение нового пароля</label>
+                        <input type="password" id="new-password-confirm" placeholder="Повторите новый пароль" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancel-change-password-btn" class="btn-cancel">Отмена</button>
+                <button type="submit" form="change-password-form" class="btn-save">Сохранить</button>
             </div>
         </div>
     </div>

@@ -8,6 +8,7 @@ let applicationModal, viewModal, deleteModal;
 let kanbanBoard;
 let moreActionsBtn, moreActionsMenu, autoIgnoreBtn;
 let autoIgnoreModal, cancelAutoIgnoreBtn, confirmAutoIgnoreBtn;
+let changePasswordBtn, changePasswordForm, cancelChangePasswordBtn, changePasswordModal;
 
 function initDomRefs() {
     addApplicationBtn = document.getElementById('add-application-btn');
@@ -38,6 +39,10 @@ function initDomRefs() {
     autoIgnoreModal = document.getElementById('auto-ignore-modal');
     cancelAutoIgnoreBtn = document.getElementById('cancel-auto-ignore-btn');
     confirmAutoIgnoreBtn = document.getElementById('confirm-auto-ignore-btn');
+    changePasswordBtn = document.getElementById('change-password-btn');
+    changePasswordForm = document.getElementById('change-password-form');
+    cancelChangePasswordBtn = document.getElementById('cancel-change-password-btn');
+    changePasswordModal = document.getElementById('change-password-modal');
 }
 
 function setupEventListeners() {
@@ -119,6 +124,7 @@ function setupEventListeners() {
             closeDeleteModal();
             closeLogoutModal();
             closeAutoIgnoreModal();
+            closeChangePasswordModal();
         });
     });
 
@@ -293,6 +299,20 @@ function setupEventListeners() {
         confirmAutoIgnoreBtn.addEventListener('click', handleAutoIgnore);
     }
 
+    // Change Password
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener('click', () => {
+            moreActionsMenu.classList.add('hidden');
+            openChangePasswordModal();
+        });
+    }
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', handleChangePassword);
+    }
+    if (cancelChangePasswordBtn) {
+        cancelChangePasswordBtn.addEventListener('click', closeChangePasswordModal);
+    }
+
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         // Close modals on Escape
@@ -302,6 +322,7 @@ function setupEventListeners() {
             closeDeleteModal();
             closeLogoutModal();
             closeAutoIgnoreModal();
+            closeChangePasswordModal();
         }
 
         // Enter to confirm logout

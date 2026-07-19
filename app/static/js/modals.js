@@ -374,3 +374,53 @@ async function handleAutoIgnore() {
         confirmAutoIgnoreBtn.textContent = 'Перенести';
     }
 }
+
+// ====== Change Password ======
+
+function openChangePasswordModal() {
+    document.getElementById('change-password-form').reset();
+    document.getElementById('change-password-modal').classList.remove('hidden');
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('change-password-modal').classList.add('hidden');
+}
+
+async function handleChangePassword(e) {
+    e.preventDefault();
+    const oldPassword = document.getElementById('old-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const newPasswordConfirm = document.getElementById('new-password-confirm').value;
+
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/auth/change-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                old_password: oldPassword,
+                new_password: newPassword,
+                new_password_confirm: newPasswordConfirm
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToast('Пароль успешно изменён', 'success');
+            closeChangePasswordModal();
+        } else {
+            let detail;
+            if (typeof data.detail === 'string') {
+                detail = data.detail;
+            } else if (Array.isArray(data.detail)) {
+                const messages = data.detail.map(e => e.msg.replace(/^Value error, /, ''));
+                detail = messages.join('; ');
+            } else {
+                detail = 'Ошибка смены пароля';
+            }
+            showToast(detail, 'error');
+        }
+    } catch (err) {
+        showToast('Ошибка подключения', 'error');
+    }
+}

@@ -207,3 +207,4 @@ async function handleLogoutWithRedirect() {
         window.location.href = '/';
     }
 }
+
