@@ -304,6 +304,36 @@
         padding: 8px 10px;
         font-size: 11px;
     }
+
+    /* Pagination - compact */
+    .admin-page .pagination {
+        padding: 12px 10px;
+        gap: 8px;
+    }
+
+    .admin-page .pagination-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-page .pagination-btn {
+        font-size: 0;
+        padding: 8px 10px;
+        min-width: 36px;
+        min-height: 36px;
+    }
+
+    .admin-page #pagination-prev::before {
+        content: "←";
+        font-size: 18px;
+    }
+
+    .admin-page #pagination-next::before {
+        content: "→";
+        font-size: 18px;
+    }
 }
 
 /* ====== Auth form mobile fix ====== */

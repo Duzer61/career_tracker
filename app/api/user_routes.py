@@ -34,6 +34,7 @@ async def get_users(
     order: str = Query("desc", description="Sort order: asc or desc"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(cf.ADMIN_PAGE_SIZE, ge=1, le=100, description="Users per page"),
+    search: str = Query("", description="Filter by login"),
 ):
     """
     Get all users with pagination. For users with admin role only.
@@ -57,15 +58,22 @@ async def get_users(
             detail="Invalid order. Must be 'asc' or 'desc'",
         )
 
-    # Get total count
-    total_result = await db.execute(select(func.count(User.id)))
+    # Build base query with optional search filter
+    base_query = select(User)
+    if search:
+        base_query = base_query.where(User.login.ilike(f"%{search}%"))
+
+    # Get total count (with search filter applied)
+    count_query = select(func.count(User.id))
+    if search:
+        count_query = count_query.where(User.login.ilike(f"%{search}%"))
+    total_result = await db.execute(count_query)
     total = total_result.scalar_one()
 
     # Build query with sorting and pagination
     sort_column = getattr(User, sort_by)
     query = (
-        select(User)
-        .order_by(sort_column.asc() if order == "asc" else sort_column.desc())
+        base_query.order_by(sort_column.asc() if order == "asc" else sort_column.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )

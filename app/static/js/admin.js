@@ -1,12 +1,16 @@
 // Admin panel for user management
 
 // State
-let allUsers = [];
 let currentSortBy = 'created_at';
 let currentOrder = 'desc';
+let currentPage = 1;
+let currentPageSize = null; // будет получен из ответа API
+let totalPages = 1;
+let totalUsers = 0;
 let deleteUserId = null;
 let toggleAdminUserId = null;
 let toggleAdminIsCurrentlyAdmin = null;
+let searchTimeout = null;
 
 // DOM references
 const usersTbody = document.getElementById('users-tbody');
@@ -25,6 +29,10 @@ const toggleAdminModalTitle = document.getElementById('toggle-admin-modal-title'
 const toggleAdminModalText = document.getElementById('toggle-admin-modal-text');
 const confirmToggleAdminBtn = document.getElementById('confirm-toggle-admin-btn');
 const cancelToggleAdminBtn = document.getElementById('cancel-toggle-admin-btn');
+const paginationContainer = document.getElementById('pagination');
+const paginationPrev = document.getElementById('pagination-prev');
+const paginationNext = document.getElementById('pagination-next');
+const paginationInfo = document.getElementById('pagination-info');
 
 // Initialize admin page
 async function initAdmin() {
@@ -60,6 +68,10 @@ async function initAdmin() {
     sortableHeaders.forEach(th => {
         th.addEventListener('click', () => handleSort(th.dataset.sortField));
     });
+
+    // Пагинация
+    paginationPrev.addEventListener('click', prevPage);
+    paginationNext.addEventListener('click', nextPage);
 
     // Удаление — делегирование события через tbody
     usersTbody.addEventListener('click', (e) => {
@@ -109,31 +121,47 @@ async function initAdmin() {
 
 async function loadUsers() {
     try {
-        const url = `${API_BASE}/users?sort_by=${currentSortBy}&order=${currentOrder}`;
+        const params = new URLSearchParams({
+            sort_by: currentSortBy,
+            order: currentOrder,
+            page: currentPage,
+        });
+
+        // Передаём page_size только если уже получили его с сервера
+        if (currentPageSize !== null) {
+            params.set('page_size', currentPageSize);
+        }
+
+        const search = searchInput.value.trim();
+        if (search) {
+            params.set('search', search);
+        }
+
+        const url = `${API_BASE}/users?${params.toString()}`;
         const response = await authenticatedFetch(url);
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             throw new Error(err.detail || 'Ошибка загрузки пользователей');
         }
-        allUsers = await response.json();
-        renderUsers();
+        const data = await response.json();
+
+        // Сохраняем page_size из ответа как единственный source of truth
+        currentPageSize = data.page_size;
+        totalUsers = data.total;
+        totalPages = data.total_pages;
+        currentPage = data.page;
+
+        renderUsers(data.items);
+        updatePagination();
     } catch (error) {
         showToast('Ошибка загрузки пользователей: ' + error.message, 'error');
     }
 }
 
-function renderUsers() {
-    const search = searchInput.value.trim().toLowerCase();
+function renderUsers(users) {
+    const hasUsers = users.length > 0;
 
-    // Filter by login on client side
-    let filtered = allUsers;
-    if (search) {
-        filtered = allUsers.filter(user => user.login.toLowerCase().includes(search));
-    }
-
-    const hasUsers = filtered.length > 0;
-
-    userCount.textContent = filtered.length;
+    userCount.textContent = totalUsers;
     emptyState.classList.toggle('hidden', hasUsers);
     usersTbody.innerHTML = '';
 
@@ -141,7 +169,7 @@ function renderUsers() {
 
     const isSuper = currentUser && currentUser.is_superadmin;
 
-    for (const user of filtered) {
+    for (const user of users) {
         const tr = document.createElement('tr');
         const isAdmin = user.is_admin ? 'Да' : 'Нет';
         const isSelf = currentUser && currentUser.id === user.id;
@@ -169,6 +197,32 @@ function renderUsers() {
     }
 }
 
+function updatePagination() {
+    if (totalPages <= 1) {
+        paginationContainer.classList.add('hidden');
+        return;
+    }
+
+    paginationContainer.classList.remove('hidden');
+    paginationInfo.textContent = `Страница ${currentPage} из ${totalPages}`;
+    paginationPrev.disabled = currentPage <= 1;
+    paginationNext.disabled = currentPage >= totalPages;
+}
+
+function goToPage(page) {
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    loadUsers();
+}
+
+function prevPage() {
+    goToPage(currentPage - 1);
+}
+
+function nextPage() {
+    goToPage(currentPage + 1);
+}
+
 async function handleToggleAdmin(userId, isCurrentlyAdmin) {
     try {
         const response = await authenticatedFetch(`${API_BASE}/users/${userId}/admin`, {
@@ -188,14 +242,25 @@ async function handleToggleAdmin(userId, isCurrentlyAdmin) {
 }
 
 function handleSearch() {
-    searchClearBtn.classList.toggle('hidden', !searchInput.value);
-    renderUsers();
+    const hasValue = !!searchInput.value;
+    searchClearBtn.classList.toggle('hidden', !hasValue);
+
+    // Debounce: сбрасываем предыдущий таймер
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
+
+    searchTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadUsers();
+    }, 300);
 }
 
 function clearSearch() {
     searchInput.value = '';
     searchClearBtn.classList.add('hidden');
-    renderUsers();
+    currentPage = 1;
+    loadUsers();
     searchInput.focus();
 }
 
@@ -213,6 +278,7 @@ function handleSort(field) {
     }
 
     updateSortIndicators();
+    currentPage = 1;
     loadUsers();
 }
 

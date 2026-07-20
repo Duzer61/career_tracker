@@ -32,7 +32,7 @@ class Config:
     MAX_LOGIN_ATTEMPTS: int = 10  # max attempts in time window
     WINDOW_LOGIN_ATTEMPTS: int = 300  # seconds
     AUTO_IGNORE_DAYS: int = 30  # days after which created applications are auto-ignored
-    ADMIN_PAGE_SIZE: int = 50  # users per page in admin panel (1–100)
+    ADMIN_PAGE_SIZE: int = 2  # users per page in admin panel (1–100)
 
 
 def get_bool(value: str | None) -> bool:
