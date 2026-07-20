@@ -49,6 +49,14 @@ class CurrentUserResponse(AdminUserResponse):
     is_superadmin: bool = False
 
 
+class PaginatedUsersResponse(BaseModel):
+    items: list[AdminUserResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
 class RefreshTokenSchema(BaseModel):
     refresh_token: str
 

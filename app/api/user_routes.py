@@ -7,10 +7,16 @@ from app.auth import (
     has_admin_privileges,
     is_superadmin,
 )
+from app.config import config as cf
 from app.crud import delete_user, set_user_admin_status
 from app.db.database import SessionDep
 from app.db.models import User
-from app.schemas import AdminActionRequest, AdminUserResponse, CurrentUserResponse
+from app.schemas import (
+    AdminActionRequest,
+    AdminUserResponse,
+    CurrentUserResponse,
+    PaginatedUsersResponse,
+)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -20,16 +26,18 @@ async def test_page():
     return {"status": "Ok!"}
 
 
-@router.get("", response_model=list[AdminUserResponse])
+@router.get("", response_model=PaginatedUsersResponse)
 async def get_users(
     db: SessionDep,
     current_user: User = Depends(get_current_user),
     sort_by: str = Query("created_at", description="Field to sort by: login or created_at"),
     order: str = Query("desc", description="Sort order: asc or desc"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(cf.ADMIN_PAGE_SIZE, ge=1, le=100, description="Users per page"),
 ):
     """
-    Get all users. For users with admin role only.
-    Supports sorting by login or created_at in ascending or descending order.
+    Get all users with pagination. For users with admin role only.
+    Supports sorting by login, created_at, or is_admin in ascending or descending order.
     """
     if not has_admin_privileges(current_user):
         raise HTTPException(
@@ -49,13 +57,31 @@ async def get_users(
             detail="Invalid order. Must be 'asc' or 'desc'",
         )
 
-    # Build query with sorting
+    # Get total count
+    total_result = await db.execute(select(func.count(User.id)))
+    total = total_result.scalar_one()
+
+    # Build query with sorting and pagination
     sort_column = getattr(User, sort_by)
-    query = select(User).order_by(sort_column.asc() if order == "asc" else sort_column.desc())
+    query = (
+        select(User)
+        .order_by(sort_column.asc() if order == "asc" else sort_column.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
 
     result = await db.execute(query)
     users = result.scalars().all()
-    return users
+
+    total_pages = (total + page_size - 1) // page_size
+
+    return PaginatedUsersResponse(
+        items=users,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+    )
 
 
 @router.get("/me", response_model=CurrentUserResponse)

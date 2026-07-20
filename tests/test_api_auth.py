@@ -282,7 +282,7 @@ class TestSuperAdmin:
         # Get target user by listing users
         list_resp = await client.get("/api/users")
         assert list_resp.status_code == 200
-        users = list_resp.json()
+        users = list_resp.json()["items"]
         target = [u for u in users if u["login"] == "targetuser"][0]
         target_id = target["id"]
 
@@ -309,7 +309,12 @@ class TestSuperAdmin:
         response = await client.get("/api/users")
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        assert "items" in data
+        assert "total" in data
+        assert "page" in data
+        assert "page_size" in data
+        assert "total_pages" in data
+        assert isinstance(data["items"], list)
 
 
 class TestChangePassword:
