@@ -43,6 +43,7 @@ class UserResponse(UserBase):
 
 class AdminUserResponse(UserResponse):
     is_admin: bool
+    application_count: int = 0
 
 
 class CurrentUserResponse(AdminUserResponse):

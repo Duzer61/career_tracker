@@ -10,7 +10,7 @@ from app.auth import (
 from app.config import config as cf
 from app.crud import delete_user, set_user_admin_status
 from app.db.database import SessionDep
-from app.db.models import User
+from app.db.models import Application, User
 from app.schemas import (
     AdminActionRequest,
     AdminUserResponse,
@@ -30,7 +30,10 @@ async def test_page():
 async def get_users(
     db: SessionDep,
     current_user: User = Depends(get_current_user),
-    sort_by: str = Query("created_at", description="Field to sort by: login or created_at"),
+    sort_by: str = Query(
+        "created_at",
+        description="Field to sort by: login, created_at, is_admin or application_count",
+    ),
     order: str = Query("desc", description="Sort order: asc or desc"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(cf.ADMIN_PAGE_SIZE, ge=1, le=100, description="Users per page"),
@@ -38,7 +41,8 @@ async def get_users(
 ):
     """
     Get all users with pagination. For users with admin role only.
-    Supports sorting by login, created_at, or is_admin in ascending or descending order.
+    Supports sorting by login, created_at, is_admin, or application_count
+    in ascending or descending order.
     """
     if not has_admin_privileges(current_user):
         raise HTTPException(
@@ -46,7 +50,7 @@ async def get_users(
         )
 
     # Validate sort_by and order
-    valid_sort_fields = {"login", "created_at", "is_admin"}
+    valid_sort_fields = {"login", "created_at", "is_admin", "application_count"}
     if sort_by not in valid_sort_fields:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -58,33 +62,57 @@ async def get_users(
             detail="Invalid order. Must be 'asc' or 'desc'",
         )
 
-    # Build base query with optional search filter
-    base_query = select(User)
-    if search:
-        base_query = base_query.where(User.login.ilike(f"%{search}%"))
-
-    # Get total count (with search filter applied)
+    # Count query (with search filter applied)
     count_query = select(func.count(User.id))
     if search:
         count_query = count_query.where(User.login.ilike(f"%{search}%"))
     total_result = await db.execute(count_query)
     total = total_result.scalar_one()
 
-    # Build query with sorting and pagination
-    sort_column = getattr(User, sort_by)
-    query = (
-        base_query.order_by(sort_column.asc() if order == "asc" else sort_column.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+    # Correlated subquery to count applications per user (avoids GROUP BY)
+    application_count_subq = (
+        select(func.count(Application.id))
+        .where(Application.user_id == User.id)
+        .correlate(User)
+        .scalar_subquery()
     )
+    application_count_col = func.coalesce(application_count_subq, 0).label("application_count")
+
+    # Build query
+    base_query = select(User, application_count_col)
+    if search:
+        base_query = base_query.where(User.login.ilike(f"%{search}%"))
+
+    # Apply sorting
+    if sort_by == "application_count":
+        order_expr = application_count_col.asc() if order == "asc" else application_count_col.desc()
+    else:
+        sort_column = getattr(User, sort_by)
+        order_expr = sort_column.asc() if order == "asc" else sort_column.desc()
+    query = base_query.order_by(order_expr)
+
+    # Apply pagination
+    query = query.offset((page - 1) * page_size).limit(page_size)
 
     result = await db.execute(query)
-    users = result.scalars().all()
+    rows = result.all()
+    # rows is a list of tuples (User, int)
 
     total_pages = (total + page_size - 1) // page_size
 
+    items = [
+        AdminUserResponse(
+            id=user.id,
+            login=user.login,
+            created_at=user.created_at,
+            is_admin=user.is_admin,
+            application_count=app_count,
+        )
+        for user, app_count in rows
+    ]
+
     return PaginatedUsersResponse(
-        items=users,
+        items=items,
         total=total,
         page=page,
         page_size=page_size,
