@@ -78,13 +78,12 @@
 
 /* Application count column */
 .admin-table th:nth-child(4) {
-    text-align: center;
+    white-space: nowrap;
 }
 
 .admin-table td:nth-child(4) {
     font-weight: 600;
     color: #212529;
-    text-align: center;
 }
 
 /* Admin badge column */
