@@ -77,7 +77,10 @@
 }
 
 /* Application count column */
-.admin-table th:nth-child(4),
+.admin-table th:nth-child(4) {
+    text-align: center;
+}
+
 .admin-table td:nth-child(4) {
     font-weight: 600;
     color: #212529;
