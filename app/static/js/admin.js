@@ -187,6 +187,7 @@ function renderUsers(users) {
             <td data-label="ID">${escapeHtml(user.id)}</td>
             <td data-label="Логин">${escapeHtml(user.login)}</td>
             <td data-label="Дата создания">${formatDateTime(user.created_at)}</td>
+            <td data-label="Отклики" class="cell-application-count">${escapeHtml(user.application_count)}</td>
             <td data-label="Админ"><span class="admin-badge ${user.is_admin ? 'admin-badge--yes' : 'admin-badge--no'}">${isAdmin}</span></td>
             <td data-label="Действия">
                 <button class="btn-delete-user" data-user-id="${escapeHtml(user.id)}" data-user-login="${escapeHtml(user.login)}">Удалить</button>
@@ -286,11 +287,11 @@ function updateSortIndicators() {
     sortableHeaders.forEach(th => {
         const field = th.dataset.sortField;
         if (currentSortBy === field) {
-            th.innerHTML = field === 'login' ? 'Логин' : field === 'is_admin' ? 'Админ' : 'Дата создания';
+            th.innerHTML = field === 'login' ? 'Логин' : field === 'application_count' ? 'Отклики' : field === 'is_admin' ? 'Админ' : 'Дата создания';
             th.innerHTML += currentOrder === 'asc' ? ' ▴' : ' ▾';
             th.classList.add('active-sort');
         } else {
-            th.innerHTML = field === 'login' ? 'Логин' : field === 'is_admin' ? 'Админ' : 'Дата создания';
+            th.innerHTML = field === 'login' ? 'Логин' : field === 'application_count' ? 'Отклики' : field === 'is_admin' ? 'Админ' : 'Дата создания';
             th.classList.remove('active-sort');
         }
     });
