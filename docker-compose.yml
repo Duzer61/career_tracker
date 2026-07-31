@@ -49,6 +49,9 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - BACKUP_DIR=/backups
+    volumes:
+      - pg_backups:/backups
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000"]
       interval: 30s
@@ -64,3 +67,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  pg_backups:

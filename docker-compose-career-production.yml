@@ -39,6 +39,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    environment:
+      - BACKUP_DIR=/backups
+    volumes:
+      - pg_backups:/backups
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000"]
       interval: 30s
@@ -54,3 +58,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  pg_backups:

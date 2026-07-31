@@ -33,6 +33,13 @@ class Config:
     WINDOW_LOGIN_ATTEMPTS: int = 300  # seconds
     AUTO_IGNORE_DAYS: int = 30  # days after which created applications are auto-ignored
     ADMIN_PAGE_SIZE: int = 20  # users per page in admin panel (1–100)
+    POSTGRES_HOST: str = "localhost"
+    POSTGRES_PORT: str = "5432"
+    POSTGRES_USER: str = ""
+    POSTGRES_PASSWORD: str = ""
+    POSTGRES_DB: str = ""
+    BACKUP_DIR: str = "/backups"
+    BACKUP_RETENTION_DAYS: int = 30  # backup files retention period in days
 
 
 def get_bool(value: str | None) -> bool:
@@ -50,11 +57,22 @@ def load_config() -> Config:
         name.strip() for name in env("ALLOWED_USERNAMES", "").split(",") if name.strip()
     ]
 
+    # PostgreSQL credentials — read once, reused for db_url and pg_dump
+    pg_host = env("POSTGRES_HOST")
+    pg_port = env("POSTGRES_PORT")
+    pg_user = env("POSTGRES_USER")
+    pg_password = env("POSTGRES_PASSWORD")
+    pg_db = env("POSTGRES_DB")
+
     return Config(
         db=DatabaseConfig(
-            db_url=f"postgresql+asyncpg://{env("POSTGRES_USER")}:{env("POSTGRES_PASSWORD")}"
-            f"@{env("POSTGRES_HOST")}:{env("POSTGRES_PORT")}/{env("POSTGRES_DB")}"
+            db_url=f"postgresql+asyncpg://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_db}"
         ),
+        POSTGRES_HOST=pg_host,
+        POSTGRES_PORT=pg_port,
+        POSTGRES_USER=pg_user,
+        POSTGRES_PASSWORD=pg_password,
+        POSTGRES_DB=pg_db,
         redis=RedisConfig(
             redis_url=f"redis://:{env("REDIS_PASSWORD")}@{env("REDIS_HOST")}"
             f":{env("REDIS_PORT")}/0"

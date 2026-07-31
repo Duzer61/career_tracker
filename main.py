@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.api import backup_routes  # noqa: F401  # registers /api/admin/backups on admin_router
 from app.api.admin_routes import router as admin_router
 from app.api.applications_routers import router as board_router
 from app.api.auth_routers import router as auth_router

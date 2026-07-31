@@ -5,7 +5,7 @@ WORKDIR /app
 # Установка uv и bash (для лучшей совместимости)
 RUN pip install uv && \
     apt-get update && \
-    apt-get install -y bash curl && \
+    apt-get install -y bash curl postgresql-client && \
     rm -rf /var/lib/apt/lists/*
 
 # Копирование файлов зависимостей
