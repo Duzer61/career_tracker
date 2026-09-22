@@ -86,6 +86,10 @@ async def get_users(
     # Apply sorting
     if sort_by == "application_count":
         order_expr = application_count_col.asc() if order == "asc" else application_count_col.desc()
+    elif sort_by == "login":
+        # Sort by lowercase login to make the ordering case-insensitive
+        sort_column = func.lower(getattr(User, sort_by))
+        order_expr = sort_column.asc() if order == "asc" else sort_column.desc()
     else:
         sort_column = getattr(User, sort_by)
         order_expr = sort_column.asc() if order == "asc" else sort_column.desc()
