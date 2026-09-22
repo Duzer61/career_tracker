@@ -97,8 +97,7 @@ async def get_applications(
 
     query = query.order_by(asc(Application.created_at) if reverse else desc(Application.created_at))
 
-    result = await db.scalars(query)
-    applications = result.all()
+    applications = list((await db.scalars(query)).all())
     return applications
 
 
@@ -191,7 +190,7 @@ async def get_application_status_history(
         .where(ApplicationStatusHistory.application_id == application.id)
         .order_by(asc(ApplicationStatusHistory.changed_at))
     )
-    return result.all()
+    return list(result.all())
 
 
 async def delete_status_history_entry(
