@@ -17,11 +17,12 @@ def human_size(num: int) -> str:
         raise ValueError("Размер не может быть отрицательным")
     if num < 1024:
         return f"{num} B"
+    size = float(num)
     for unit in ("KB", "MB", "GB", "TB"):
-        num /= 1024.0
-        if num < 1024:
-            return f"{num:.1f} {unit}"
-    return f"{num:.1f} PB"
+        size /= 1024.0
+        if size < 1024:
+            return f"{size:.1f} {unit}"
+    return f"{size:.1f} PB"
 
 
 def _is_valid_backup_filename(filename: str) -> bool:
