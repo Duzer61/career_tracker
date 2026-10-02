@@ -1,4 +1,4 @@
-from typing import Annotated, Awaitable, cast
+from typing import Annotated
 
 import redis.asyncio as redis
 from fastapi import Depends
@@ -7,34 +7,30 @@ from app.config import config as cf
 
 
 class RedisClient:
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str):
         self.url = url
         self.client: redis.Redis | None = None
 
-    async def connect(self) -> redis.Redis:
+    async def connect(self):
         """
         Redis async connection.
         """
-        if self.client is not None:
-            return self.client
-        client = redis.from_url(
+        self.client = redis.from_url(
             self.url, decode_responses=True, encoding="utf-8"  # чтобы получать строки вместо байтов
         )
         # Проверка подключения
         try:
-            await cast(Awaitable[bool], client.ping())
+            await self.client.ping()
             print("✅ Подключено к Redis")
         except Exception as e:
             print(f"❌ Ошибка подключения к Redis: {e}")
             raise
-        self.client = client
-        return client
 
-    async def close(self) -> None:
+    async def close(self):
         """
         Close Redis connection.
         """
-        if self.client is not None:
+        if self.client:
             await self.client.close()
             self.client = None
             print("🔌 Соединение с Redis закрыто")
@@ -43,14 +39,13 @@ class RedisClient:
         """
         Get Redis client.
         """
-        client = self.client
-        if client is None:
+        if not self.client:
             try:
-                client = await self.connect()
+                await self.connect()
             except Exception as e:
                 print(f"Ошибка при работе с Redis: {e}")
                 raise
-        return client
+        return self.client
 
 
 # Создаём экземпляр клиента Redis
