@@ -109,5 +109,12 @@ jobs:
         script: |
           cd career_tracker
           sudo docker compose -f docker-compose-career-production.yml pull
-          sudo docker compose -f docker-compose-career-production.yml down
-          sudo docker compose -f docker-compose-career-production.yml up -d
+          sudo docker compose -f docker-compose-career-production.yml up -d --remove-orphans
+          sleep 10
+          sudo docker compose -f docker-compose-career-production.yml ps
+          if ! sudo docker compose -f docker-compose-career-production.yml ps --status running --services | grep -qx career; then
+            echo "❌ Контейнер career не запущен. Логи:"
+            sudo docker compose -f docker-compose-career-production.yml logs --tail=200 career
+            exit 1
+          fi
+          echo "✅ career запущен"
