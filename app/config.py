@@ -40,6 +40,7 @@ class Config:
     POSTGRES_DB: str = ""
     BACKUP_DIR: str = "/backups"
     BACKUP_RETENTION_DAYS: int = 30  # backup files retention period in days
+    BACKUP_TIMEOUT_SECONDS: int = 600  # max time allowed for a single pg_dump run
 
 
 def get_bool(value: str | None) -> bool:

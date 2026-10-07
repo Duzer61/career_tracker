@@ -1,3 +1,5 @@
+import os
+
 from fastapi import Depends, HTTPException
 from fastapi.responses import FileResponse
 
@@ -39,7 +41,9 @@ async def download_backup(filename: str, current_user: User = Depends(get_curren
     _require_admin(current_user)
     if not _is_valid_backup_filename(filename):
         raise HTTPException(status_code=400, detail="Недопустимое имя файла бэкапа")
-    path = f"{cf.BACKUP_DIR}/{filename}"
+    path = os.path.join(cf.BACKUP_DIR, filename)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Бэкап не найден")
     return FileResponse(path, filename=filename, media_type="application/octet-stream")
 
 

@@ -37,7 +37,11 @@ def _backup_path(filename: str) -> str:
     return os.path.join(cf.BACKUP_DIR, filename)
 
 
-def _run_command(cmd: list[str], env_extra: dict[str, str] | None = None) -> None:
+def _run_command(
+    cmd: list[str],
+    env_extra: dict[str, str] | None = None,
+    timeout: int = cf.BACKUP_TIMEOUT_SECONDS,
+) -> None:
     """Run a subprocess command synchronously, raising ValueError on failure."""
     env = os.environ.copy()
     if env_extra:
@@ -50,11 +54,14 @@ def _run_command(cmd: list[str], env_extra: dict[str, str] | None = None) -> Non
             env=env,
             check=False,
             stdin=subprocess.DEVNULL,
+            timeout=timeout,
         )
     except FileNotFoundError as exc:
         raise ValueError(
             "Утилита pg_dump не найдена. Проверьте установку postgresql-client"
         ) from exc
+    except subprocess.TimeoutExpired as exc:
+        raise ValueError(f"Превышено время ожидания команды ({timeout} с)") from exc
     if result.returncode != 0:
         stderr = result.stderr.strip() or "Неизвестная ошибка"
         raise ValueError(f"Ошибка выполнения команды: {stderr}")
@@ -68,6 +75,8 @@ async def create_backup() -> dict:
     """
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename = f"backup_{timestamp}.dump"
+
+    os.makedirs(cf.BACKUP_DIR, exist_ok=True)
     path = os.path.join(cf.BACKUP_DIR, filename)
 
     cmd = [
@@ -85,7 +94,13 @@ async def create_backup() -> dict:
     ]
     env_extra = {"PGPASSWORD": cf.POSTGRES_PASSWORD}
 
-    await asyncio.to_thread(_run_command, cmd, env_extra)
+    try:
+        await asyncio.to_thread(_run_command, cmd, env_extra)
+    except Exception:
+        # Do not leave a partial dump behind if pg_dump fails halfway through.
+        if os.path.exists(path):
+            os.remove(path)
+        raise
 
     size = os.path.getsize(path)
     await cleanup_old_backups()
@@ -156,7 +171,7 @@ async def cleanup_old_backups() -> int:
                 if os.stat(path).st_mtime < cutoff:
                     os.remove(path)
                     count += 1
-            except OSError, FileNotFoundError:
+            except OSError:
                 continue
         return count
 

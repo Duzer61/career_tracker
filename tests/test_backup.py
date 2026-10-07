@@ -1,12 +1,14 @@
 """Tests for backup functionality (app/backup.py and app/api/backup_routes.py)."""
 
 import os
+import sys
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from app.backup import (
     _is_valid_backup_filename,
+    _run_command,
     cleanup_old_backups,
     create_backup,
     delete_backup,
@@ -271,3 +273,91 @@ class TestBackupEndpoints:
 
         response = await client.delete(f"{BACKUP_API}/..%2Fetc%2Fpasswd")
         assert response.status_code in (400, 404)
+
+
+# ──────────────────────────────────────────────
+# create_backup: directory handling and cleanup
+# ──────────────────────────────────────────────
+
+
+def _fake_pg_dump(cmd, env_extra=None):
+    """Emulate pg_dump writing its -f output file."""
+    for i, arg in enumerate(cmd):
+        if arg == "-f":
+            with open(cmd[i + 1], "wb") as f:
+                f.write(b"fake dump")
+            return
+
+
+class TestCreateBackup:
+    async def test_create_backup_creates_missing_dir(self, tmp_path, monkeypatch):
+        """create_backup() must create BACKUP_DIR if it does not exist yet."""
+        import app.backup as backup_module
+
+        missing = tmp_path / "nested" / "backups"
+        assert not missing.exists()
+        monkeypatch.setattr(cf, "BACKUP_DIR", str(missing))
+        monkeypatch.setattr(cf, "BACKUP_RETENTION_DAYS", 7)
+        monkeypatch.setattr(backup_module, "_run_command", _fake_pg_dump)
+
+        created = await create_backup()
+
+        assert os.path.exists(os.path.join(str(missing), created["filename"]))
+
+    async def test_create_backup_cleans_up_partial_file_on_failure(self, backup_dir, monkeypatch):
+        """If pg_dump fails, no partial dump file must be left behind."""
+        import app.backup as backup_module
+
+        def _failing_run_command(cmd, env_extra=None):
+            _fake_pg_dump(cmd, env_extra)
+            raise ValueError("pg_dump failed")
+
+        monkeypatch.setattr(backup_module, "_run_command", _failing_run_command)
+
+        with pytest.raises(ValueError):
+            await create_backup()
+
+        assert await list_backups() == []
+
+
+# ──────────────────────────────────────────────
+# _run_command: timeout safety
+# ──────────────────────────────────────────────
+
+
+class TestRunCommand:
+    def test_timeout_raises_value_error(self):
+        """A hung command must raise ValueError instead of blocking forever."""
+        with pytest.raises(ValueError):
+            _run_command(
+                [sys.executable, "-c", "import time; time.sleep(5)"],
+                timeout=0.5,
+            )
+
+
+# ──────────────────────────────────────────────
+# download endpoint: missing file handling
+# ──────────────────────────────────────────────
+
+
+async def _make_admin(client, test_session, login: str) -> None:
+    """Register + login a user and grant admin privileges."""
+    from sqlalchemy import select
+
+    from app.db.models import User
+
+    await _register_and_login(client, login)
+    result = await test_session.scalars(select(User).where(User.login == login))
+    user = result.one()
+    user.is_admin = True
+    await test_session.commit()
+
+
+class TestBackupDownload:
+    async def test_download_missing_file_returns_404(self, client, test_session, backup_dir):
+        """Downloading a valid-named but absent backup returns 404, not 500."""
+        await _make_admin(client, test_session, "backupadmin")
+
+        response = await client.get(f"{BACKUP_API}/backup_20250102_100000.dump/download")
+
+        assert response.status_code == 404
