@@ -89,6 +89,9 @@ def load_config() -> Config:
         SMARTCAPTCHA_SITE_KEY=env("SMARTCAPTCHA_SITE_KEY", ""),
         SMARTCAPTCHA_SECRET_KEY=env("SMARTCAPTCHA_SECRET_KEY", ""),
         SUPERADMIN_LOGIN=env("SUPERADMIN_LOGIN", ""),
+        BACKUP_DIR=env("BACKUP_DIR", "/backups"),
+        BACKUP_RETENTION_DAYS=env.int("BACKUP_RETENTION_DAYS", 30),
+        BACKUP_TIMEOUT_SECONDS=env.int("BACKUP_TIMEOUT_SECONDS", 600),
     )
 
 
