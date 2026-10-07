@@ -18,7 +18,8 @@ dependencies = [
     "psycopg2-binary>=2.9.11",
     "python-jose[cryptography]>=3.5.0",
     "redis>=7.4.0",
-    "sqlalchemy>=2.0.48",
+    "sqlalchemy[asyncio]>=2.0.48",
+    "greenlet>=3.0.0",
     "uvicorn[standard]>=0.42.0",
 ]
 

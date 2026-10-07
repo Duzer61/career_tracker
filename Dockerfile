@@ -8,15 +8,15 @@ RUN pip install uv && \
     apt-get install -y bash curl postgresql-client && \
     rm -rf /var/lib/apt/lists/*
 
-# Копирование файлов зависимостей
-COPY pyproject.toml ./
+# Копирование файлов зависимостей (pyproject + lock — воспроизводимая сборка)
+COPY pyproject.toml uv.lock ./
 
-# Установка зависимостей (упрощенный способ)
+# Установка зависимостей строго по uv.lock (как в CI и тестах)
 RUN uv venv && \
     . .venv/bin/activate && \
-    uv pip install -e .
+    uv sync --frozen --no-install-project
 
-# Копирование всего приложения
+# Копирование всего приложения (пакет app импортируется из рабочей директории /app)
 COPY . .
 
 # Создание entrypoint скрипта с автоматическими миграциями
