@@ -12,6 +12,10 @@ let toggleAdminUserId = null;
 let toggleAdminIsCurrentlyAdmin = null;
 let searchTimeout = null;
 
+// Persistent UI state for the active admin tab
+const ADMIN_TAB_KEY = 'adminTab';
+const ADMIN_TABS = ['users', 'backups'];
+
 // DOM references
 const usersTbody = document.getElementById('users-tbody');
 const userCount = document.getElementById('user-count');
@@ -123,18 +127,28 @@ async function initAdmin() {
     // Initialize backups panel (defined in backups.js)
     initBackups();
 
+    // Restore the last active tab after a reload (e.g. F5)
+    const savedTab = sessionStorage.getItem(ADMIN_TAB_KEY);
+    if (ADMIN_TABS.includes(savedTab) && savedTab !== 'users') {
+        switchAdminTab(savedTab);
+    }
+
     // Load users
     await loadUsers();
 }
 
 // Switch between admin tabs and lazily load the backups list
 function switchAdminTab(tabName) {
+    if (!ADMIN_TABS.includes(tabName)) tabName = 'users';
+
     document.querySelectorAll('.admin-tab').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
     document.querySelectorAll('.admin-panel').forEach(panel => {
         panel.classList.toggle('hidden', panel.id !== `${tabName}-panel`);
     });
+
+    sessionStorage.setItem(ADMIN_TAB_KEY, tabName);
 
     if (tabName === 'backups' && typeof loadBackups === 'function') {
         loadBackups();
