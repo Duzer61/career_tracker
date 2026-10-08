@@ -7,18 +7,21 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Parse a server datetime. The server may return a naive UTC string (no
+// timezone suffix, e.g. "2025-01-01T12:00:00") or a timezone-aware ISO string
+// ("...+00:00" / "...Z"). Naive strings are treated as UTC by appending "Z".
+function parseServerDate(dateString) {
+    if (!dateString) return null;
+    const hasTimezone = /(Z|[+-]\d{2}:?\d{2})$/.test(dateString);
+    return new Date(hasTimezone ? dateString : dateString + 'Z');
+}
+
 function formatDate(dateString) {
-    const utcString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
-    const date = new Date(utcString);
-    return date.toLocaleDateString('ru-RU');
+    return parseServerDate(dateString).toLocaleDateString('ru-RU');
 }
 
 function formatDateTime(dateString) {
-    // Сервер отдаёт datetime без часового пояса (UTC, но без Z на конце)
-    // Принудительно добавляем Z, чтобы new Date() трактовал время как UTC
-    const utcString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
-    const date = new Date(utcString);
-    return date.toLocaleDateString('ru-RU', {
+    return parseServerDate(dateString).toLocaleDateString('ru-RU', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',

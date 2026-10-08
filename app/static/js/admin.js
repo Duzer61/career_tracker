@@ -115,8 +115,30 @@ async function initAdmin() {
         adminActionsCol.classList.remove('hidden');
     }
 
+    // Admin tabs (Пользователи / Резервные копии)
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchAdminTab(tab.dataset.tab));
+    });
+
+    // Initialize backups panel (defined in backups.js)
+    initBackups();
+
     // Load users
     await loadUsers();
+}
+
+// Switch between admin tabs and lazily load the backups list
+function switchAdminTab(tabName) {
+    document.querySelectorAll('.admin-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.admin-panel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.id !== `${tabName}-panel`);
+    });
+
+    if (tabName === 'backups' && typeof loadBackups === 'function') {
+        loadBackups();
+    }
 }
 
 async function loadUsers() {

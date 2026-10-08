@@ -292,6 +292,115 @@ th.sortable.active-sort:hover {
     white-space: nowrap;
 }
 
+/* ====== Admin tabs ====== */
+.admin-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 12px 40px 0;
+    background: rgba(255, 255, 255, 0.9);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.admin-tab {
+    padding: 8px 18px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px 8px 0 0;
+    background: #f0f0f0;
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.admin-tab:hover {
+    background: #e0e0e0;
+}
+
+.admin-tab.active {
+    background: #fff;
+    color: #0969da;
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* ====== Admin panels ====== */
+.admin-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ====== Backups table ====== */
+#backups-panel .visible-count {
+    margin-left: auto;
+}
+
+.backup-table th:nth-child(1),
+.backup-table td:nth-child(1) {
+    width: 200px;
+}
+
+.backup-table td:nth-child(1) {
+    color: #6c757d;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.backup-table th:nth-child(3),
+.backup-table td:nth-child(3) {
+    width: 110px;
+}
+
+.backup-table td:nth-child(3) {
+    color: #212529;
+    white-space: nowrap;
+}
+
+.backup-table th:nth-child(4),
+.backup-table td:nth-child(4) {
+    width: 240px;
+    text-align: right;
+}
+
+/* Backup action buttons */
+.btn-backup-download,
+.btn-backup-delete {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    white-space: nowrap;
+}
+
+.btn-backup-download {
+    background: #f0f0f0;
+    color: #333;
+    margin-right: 8px;
+}
+
+.btn-backup-download:hover {
+    background: #e0e0e0;
+}
+
+.btn-backup-delete {
+    background: transparent;
+    color: #e74c3c;
+    border: 1.5px solid #e74c3c;
+}
+
+.btn-backup-delete:hover {
+    background: #e74c3c;
+    color: white;
+}
+
 /* ====== Responsive: card layout for small screens ====== */
 @media (max-width: 768px) {
     .admin-table-wrapper {
@@ -337,5 +446,38 @@ th.sortable.active-sort:hover {
         width: auto;
         padding-top: 12px;
         justify-content: flex-end;
+    }
+
+    /* Admin tabs on mobile */
+    .admin-tabs {
+        padding: 10px;
+        gap: 6px;
+    }
+
+    .admin-tab {
+        flex: 1;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+    }
+
+    /* Backups table: touch-friendly layout */
+    .backup-table td:nth-child(1),
+    .backup-table td:nth-child(3),
+    .backup-table td:nth-child(4) {
+        width: auto;
+        text-align: left;
+    }
+
+    .backup-table td:last-child {
+        gap: 8px;
+    }
+
+    .btn-backup-download,
+    .btn-backup-delete {
+        min-height: 44px;
+        padding: 10px 16px;
+        margin-right: 0;
     }
 }
