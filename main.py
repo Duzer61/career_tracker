@@ -44,7 +44,12 @@ app = FastAPI(
 
 
 class NoCacheHTMLMiddleware(BaseHTTPMiddleware):
-    """Disable browser caching for HTML responses to prevent stale page issues."""
+    """Disable browser caching for HTML responses to prevent stale page issues.
+
+    Static JS/CSS are sent with ``Cache-Control: no-cache`` so browsers always
+    revalidate them via ETag. Without this the browser may serve a stale asset
+    after a deploy (e.g. a fresh JS file calling an outdated helper).
+    """
 
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
@@ -53,6 +58,8 @@ class NoCacheHTMLMiddleware(BaseHTTPMiddleware):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
+        elif request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
         return response
 
 
