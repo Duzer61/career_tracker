@@ -21,3 +21,20 @@ static_volume/
 templates_volume/
 postgres_data/
 redis_data/
+# Never send local secrets or recovered data to Docker builds.
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.dump
+*.sql
+backups/
+backup/
+recovery/
+
+.ssh/
+*.key
+*.pem
+*.p12
+*.pfx

@@ -1,120 +1,107 @@
-name: Main career-tracker workflow
+name: Career Tracker CI and deployment
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - 'README.md'
-      - 'LICENSE'
-      - 'docs/**'
-      - '.gitignore'
-      - '.dockerignore'
-      - '**/*.md'
+    branches: [main, develop]
+    paths-ignore: ['**/*.md', LICENSE]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   tests:
-    name: Run tests
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          python-version: "3.14"
-      - name: Install dependencies
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14'
+      - name: Install locked dependencies
         run: |
-          pip install uv
-          uv sync --group test
-      - name: Run pytest
+          python -m pip install uv
+          uv sync --frozen --group test
+      - name: Run tests
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
           POSTGRES_HOST: test
-          POSTGRES_PORT: "5432"
+          POSTGRES_PORT: '5432'
           POSTGRES_DB: test
           REDIS_PASSWORD: test
           REDIS_HOST: test
-          REDIS_PORT: "6379"
-          SECRET_KEY: test
+          REDIS_PORT: '6379'
+          SECRET_KEY: dummy-test-key
           ALGORITHM: HS256
-          ACCESS_TOKEN_EXP_MINUTES: "30"
-          REFRESH_TOKEN_EXP_DAYS: "7"
+          ACCESS_TOKEN_EXP_MINUTES: '30'
+          REFRESH_TOKEN_EXP_DAYS: '7'
           ENVIRON: test
-          ONLY_ALLOWED_USERNAMES_MODE: "false"
-          ALLOWED_USERNAMES: ""
-        run: uv run pytest
+          ONLY_ALLOWED_USERNAMES_MODE: 'false'
+          ALLOWED_USERNAMES: ''
+          SMARTCAPTCHA_SITE_KEY: ''
+          SMARTCAPTCHA_SECRET_KEY: ''
+        run: uv run --frozen pytest
 
-  build_and_push_to_docker_hub:
-    name: Push Docker image to DockerHub
+  build:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: tests
     runs-on: ubuntu-latest
-    needs: [tests]
+    outputs:
+      digest: ${{ steps.image.outputs.digest }}
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Login to Docker 
-        uses: docker/login-action@v2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          username: ${{ secrets.DOCKER_USERNAME }} 
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Push to DockerHub
-        uses: docker/build-push-action@v4
+      - name: Build and push application
+        id: image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
+          platforms: linux/amd64
           push: true
-          tags: duzer61/career_tracker:latest
+          tags: duzer61/career_tracker:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
+    if: vars.CAREER_DEPLOY_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    needs: build
     runs-on: ubuntu-latest
-    needs: 
-      - build_and_push_to_docker_hub
+    environment: production
+    concurrency:
+      group: career-tracker-production
+      cancel-in-progress: false
     steps:
-    - name: Set environment variables
-      run: |
-        echo "ACCESS_TOKEN_EXP_MINUTES=${{ secrets.ACCESS_TOKEN_EXP_MINUTES }}" >> $GITHUB_ENV
-        echo "ALGORITHM=${{ secrets.ALGORITHM }}" >> $GITHUB_ENV
-        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
-        echo "ENVIRON=${{ secrets.ENVIRON }}" >> $GITHUB_ENV
-        echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> $GITHUB_ENV
-        echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> $GITHUB_ENV
-        echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> $GITHUB_ENV
-        echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}" >> $GITHUB_ENV
-        echo "POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}" >> $GITHUB_ENV
-        echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> $GITHUB_ENV
-        echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> $GITHUB_ENV
-        echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> $GITHUB_ENV
-        echo "REFRESH_TOKEN_EXP_DAYS=${{ secrets.REFRESH_TOKEN_EXP_DAYS }}" >> $GITHUB_ENV
-        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
-    - name: Checkout repo
-      uses: actions/checkout@v3
-    - name: Copy docker-compose-career-production.yml via ssh
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USER }}
-        key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
-        source: "docker-compose-career-production.yml"
-        target: "career_tracker"
-    - name: Executing remote ssh commands to deploy
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USER }}
-        key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
-        script: |
-          cd career_tracker
-          sudo docker compose -f docker-compose-career-production.yml pull
-          sudo docker compose -f docker-compose-career-production.yml up -d --remove-orphans
-          sleep 10
-          sudo docker compose -f docker-compose-career-production.yml ps
-          if ! sudo docker compose -f docker-compose-career-production.yml ps --status running --services | grep -qx career; then
-            echo "❌ Контейнер career не запущен. Логи:"
-            sudo docker compose -f docker-compose-career-production.yml logs --tail=200 career
-            exit 1
-          fi
-          echo "✅ career запущен"
+      - name: Deploy exact image through restricted SSH command
+        env:
+          DEPLOY_HOST: ${{ secrets.HOST }}
+          DEPLOY_USER: ${{ secrets.USER }}
+          DEPLOY_KEY: ${{ secrets.SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$DEPLOY_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]
+          [[ "$DEPLOY_USER" == career-deploy ]]
+          [[ -n "$DEPLOY_KEY" && -n "$DEPLOY_KNOWN_HOSTS" ]]
+          umask 077
+          key_file=$(mktemp "$RUNNER_TEMP/career-key.XXXXXX")
+          hosts_file=$(mktemp "$RUNNER_TEMP/career-hosts.XXXXXX")
+          trap 'unlink "$key_file"; unlink "$hosts_file"' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > "$key_file"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$hosts_file"
+          unset DEPLOY_KEY DEPLOY_KNOWN_HOSTS
+          ssh -i "$key_file" -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts_file" \
+            -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" "deploy $IMAGE_DIGEST"
