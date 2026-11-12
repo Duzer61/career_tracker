@@ -211,3 +211,11 @@ __marimo__/
 .PLAYWRIGHT_SELECTORS.md
 .clinerules
 .cline/
+# Keep local secrets and recovery archives out of version control.
+.env.*
+!.env.example
+*.dump
+*.dump.sha256
+backup/
+backups/
+recovery/
